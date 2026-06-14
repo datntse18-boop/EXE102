@@ -1,0 +1,822 @@
+import { useEffect, useState, useRef } from 'react'
+import Card from '../../components/cards/Card'
+import { teamService, projectService, taskService, chatService, okrService } from '../../services/apiServices'
+import { useAuth } from '../../contexts/AuthContext'
+import {
+  MessageSquare,
+  Send,
+  Target,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  Trash,
+  ClipboardList,
+  ChevronDown,
+  ChevronRight,
+  TrendingUp,
+  X,
+  PlusCircle
+} from 'lucide-react'
+
+export default function Workspace() {
+  const { user } = useAuth()
+  const [teams, setTeams] = useState<any[]>([])
+  const [selectedTeam, setSelectedTeam] = useState<any>(null)
+  const [projects, setProjects] = useState<any[]>([])
+  const [selectedProject, setSelectedProject] = useState<any>(null)
+  const [tasks, setTasks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'kanban' | 'okr'>('kanban')
+
+  // Chat Box States
+  const [showChat, setShowChat] = useState(false)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [newMsg, setNewMsg] = useState('')
+  const [sendingMsg, setSendingMsg] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // OKR States
+  const [objectives, setObjectives] = useState<any[]>([])
+  const [loadingOKRs, setLoadingOKRs] = useState(false)
+  const [showAddObjModal, setShowAddObjModal] = useState(false)
+  const [newObjTitle, setNewObjTitle] = useState('')
+  const [submittingObj, setSubmittingObj] = useState(false)
+
+  // Key Result Modal States
+  const [showAddKRModal, setShowAddKRModal] = useState(false)
+  const [selectedObjId, setSelectedObjId] = useState('')
+  const [krTitle, setKrTitle] = useState('')
+  const [krTargetValue, setKrTargetValue] = useState(100)
+  const [krUnit, setKrUnit] = useState('%')
+  const [submittingKR, setSubmittingKR] = useState(false)
+
+  // Task form state
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newDesc, setNewDesc] = useState('')
+  const [newAssignee, setNewAssignee] = useState('')
+  const [newPriority, setNewPriority] = useState('medium')
+  const [newDueDate, setNewDueDate] = useState('')
+
+  // Load initial teams
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const teamsData = await teamService.getTeams()
+        setTeams(teamsData)
+        if (teamsData.length > 0) {
+          setSelectedTeam(teamsData[0])
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadTeams()
+  }, [])
+
+  // Load projects when selected team changes
+  useEffect(() => {
+    if (!selectedTeam) return
+    const loadProjects = async () => {
+      try {
+        const projectsData = await projectService.getProjects({ teamId: selectedTeam.id })
+        setProjects(projectsData)
+        if (projectsData.length > 0) {
+          setSelectedProject(projectsData[0])
+        } else {
+          setSelectedProject(null)
+          setTasks([])
+          setObjectives([])
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadProjects()
+  }, [selectedTeam])
+
+  // Load tasks when selected project changes
+  useEffect(() => {
+    if (!selectedProject) {
+      setTasks([])
+      return
+    }
+    const loadTasks = async () => {
+      try {
+        const tasksData = await taskService.getTasks({ projectId: selectedProject.id })
+        setTasks(tasksData)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadTasks()
+    loadObjectives()
+  }, [selectedProject])
+
+  // Poll chat messages
+  useEffect(() => {
+    if (!selectedTeam || !showChat) return
+    
+    const fetchChat = async () => {
+      try {
+        const data = await chatService.getMessages(selectedTeam.id)
+        setChatMessages(data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchChat()
+    const interval = setInterval(fetchChat, 5000) // Poll every 5s
+    return () => clearInterval(interval)
+  }, [selectedTeam, showChat])
+
+  // Scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages])
+
+  const loadObjectives = async () => {
+    if (!selectedProject) return
+    setLoadingOKRs(true)
+    try {
+      const data = await okrService.getObjectives(selectedProject.id)
+      setObjectives(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingOKRs(false)
+    }
+  }
+
+  const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    try {
+      const updated = await taskService.updateTask(taskId, { status: newStatus })
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: updated.status } : t))
+    } catch (err) {
+      console.error(err)
+      alert('Không thể cập nhật trạng thái công việc')
+    }
+  }
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (window.confirm('Bạn có muốn xóa công việc này?')) {
+      try {
+        await taskService.deleteTask(taskId)
+        setTasks(tasks.filter(t => t.id !== taskId))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !newTitle || !newAssignee) return
+    try {
+      const created = await taskService.createTask({
+        projectId: selectedProject.id,
+        title: newTitle,
+        description: newDesc,
+        assignedTo: newAssignee,
+        priority: newPriority,
+        dueDate: newDueDate || undefined,
+      })
+      setTasks([created, ...tasks])
+      setShowAddForm(false)
+      setNewTitle('')
+      setNewDesc('')
+      setNewAssignee('')
+      setNewPriority('medium')
+      setNewDueDate('')
+    } catch (err) {
+      console.error(err)
+      alert('Không thể tạo công việc')
+    }
+  }
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMsg.trim() || !selectedTeam) return
+    setSendingMsg(true)
+    try {
+      const res = await chatService.sendMessage(selectedTeam.id, newMsg)
+      setChatMessages(prev => [...prev, res])
+      setNewMsg('')
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSendingMsg(false)
+    }
+  }
+
+  const handleCreateObjective = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !newObjTitle.trim()) return
+    setSubmittingObj(true)
+    try {
+      await okrService.createObjective(selectedProject.id, newObjTitle)
+      setNewObjTitle('')
+      setShowAddObjModal(false)
+      loadObjectives()
+    } catch (err) {
+      console.error(err)
+      alert('Tạo mục tiêu thất bại.')
+    } finally {
+      setSubmittingObj(false)
+    }
+  }
+
+  const handleCreateKeyResult = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedObjId || !krTitle.trim()) return
+    setSubmittingKR(true)
+    try {
+      await okrService.createKeyResult(selectedObjId, {
+        title: krTitle,
+        targetValue: krTargetValue,
+        unit: krUnit
+      })
+      setKrTitle('')
+      setKrTargetValue(100)
+      setKrUnit('%')
+      setShowAddKRModal(false)
+      loadObjectives()
+    } catch (err) {
+      console.error(err)
+      alert('Tạo kết quả then chốt thất bại.')
+    } finally {
+      setSubmittingKR(false)
+    }
+  }
+
+  const handleUpdateKRValue = async (krId: string, currentVal: number) => {
+    try {
+      await okrService.updateKeyResult(krId, currentVal)
+      loadObjectives()
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const todoTasks = tasks.filter(t => t.status === 'todo')
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress')
+  const completedTasks = tasks.filter(t => t.status === 'completed')
+
+  const isLeader = selectedTeam?.leaderId === user?.id
+
+  const TaskCard = ({ task }: { task: any }) => (
+    <Card className="mb-3 border-l-4 border-[#FF6B00] bg-white dark:bg-[#13131C] shadow-sm hover:shadow transition p-4">
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="font-bold text-gray-800 dark:text-gray-100 text-sm leading-tight">{task.title}</h4>
+        <button onClick={() => handleDeleteTask(task.id)} className="text-red-500 hover:text-red-700 text-xs">✕</button>
+      </div>
+      <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{task.description || 'Không có mô tả'}</p>
+      
+      <div className="flex justify-between items-center text-[10px] text-gray-500 mb-3">
+        <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold">🎯 {task.priority}</span>
+        {task.dueDate && <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
+      </div>
+
+      <div className="flex justify-between items-center border-t dark:border-gray-800 pt-2.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">{task.assignee?.avatar || '👤'}</span>
+          <span className="text-[10px] font-bold text-gray-750 dark:text-gray-300">{task.assignee?.name || 'Chưa phân công'}</span>
+        </div>
+        <select
+          value={task.status}
+          onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+          className="text-[10px] border dark:border-gray-800 rounded bg-white dark:bg-[#13131C] text-gray-700 dark:text-gray-300 px-2 py-1 focus:outline-none font-bold cursor-pointer"
+        >
+          <option value="todo">To Do</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+    </Card>
+  )
+
+  if (loading) {
+    return (
+      <div className="flex justify-center p-20 text-gray-500">
+        <Loader2 className="w-8 h-8 animate-spin text-[#FF6B00] mr-2" /> Đang tải không gian làm việc...
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative flex min-h-screen">
+      
+      {/* Workspace Main Column */}
+      <div className="flex-1 space-y-6 animate-fadeIn pb-10">
+        
+        {/* Banner with Chat trigger */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#13131C] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800/40">
+          <div>
+            <h1 className="text-2xl font-black text-gray-800 dark:text-white leading-none">Không gian làm việc (Workspace) 📋</h1>
+            <p className="text-xs text-gray-500 mt-2 font-medium">Quản lý dự án, tiến độ công việc nhóm và thảo luận trực tiếp.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className={`px-4 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                showChat 
+                  ? 'bg-orange-50 border-orange-200 text-[#FF6B00]' 
+                  : 'bg-white dark:bg-[#13131C] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Chat Nhóm
+            </button>
+
+            {activeTab === 'kanban' && selectedProject && (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-4 py-2 bg-[#FF6B00] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#E85A00] transition flex items-center gap-1.5"
+              >
+                + Thêm công việc
+              </button>
+            )}
+
+            {activeTab === 'okr' && selectedProject && isLeader && (
+              <button
+                onClick={() => setShowAddObjModal(true)}
+                className="px-4 py-2 bg-[#FF6B00] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#E85A00] transition flex items-center gap-1.5"
+              >
+                <Target className="w-4 h-4" />
+                Mục tiêu mới
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Project Selectors */}
+        <div className="grid md:grid-cols-2 gap-4 bg-white dark:bg-[#13131C] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800/40">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Chọn nhóm</label>
+            <select
+              value={selectedTeam?.id || ''}
+              onChange={(e) => setSelectedTeam(teams.find(t => t.id === e.target.value))}
+              className="w-full border dark:border-gray-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] font-bold text-gray-700 dark:text-gray-300"
+            >
+              {teams.length > 0 ? (
+                teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
+              ) : (
+                <option>Không có nhóm nào</option>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Chọn dự án</label>
+            <select
+              value={selectedProject?.id || ''}
+              onChange={(e) => setSelectedProject(projects.find(p => p.id === e.target.value))}
+              disabled={!selectedTeam || projects.length === 0}
+              className="w-full border dark:border-gray-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] font-bold text-gray-700 dark:text-gray-300 disabled:bg-gray-100 dark:disabled:bg-white/5"
+            >
+              {projects.length > 0 ? (
+                projects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.status})</option>)
+              ) : (
+                <option>Chưa có dự án nào</option>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* Tab Controls */}
+        <div className="flex border-b border-gray-250 dark:border-gray-800">
+          <button
+            onClick={() => setActiveTab('kanban')}
+            className={`pb-3 px-6 font-black text-xs transition border-b-2 ${activeTab === 'kanban' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            📋 Bảng công việc Kanban
+          </button>
+          <button
+            onClick={() => setActiveTab('okr')}
+            className={`pb-3 px-6 font-black text-xs transition border-b-2 ${activeTab === 'okr' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            🎯 Quản lý mục tiêu OKR
+          </button>
+        </div>
+
+        {/* TAB PANELS */}
+        {activeTab === 'kanban' ? (
+          /* KANBAN BOARD PANEL */
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* TO DO Column */}
+            <div className="bg-gray-550/30 dark:bg-white/5 rounded-2xl p-4 min-h-[500px] border border-gray-200 dark:border-gray-800/40">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-gray-800">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> To Do
+                </h3>
+                <span className="px-2 py-0.5 bg-gray-250 text-gray-600 dark:bg-gray-800 dark:text-gray-400 text-[10px] font-black rounded-full">
+                  {todoTasks.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {todoTasks.map(t => <TaskCard key={t.id} task={t} />)}
+                {todoTasks.length === 0 && <p className="text-[10px] text-gray-400 text-center py-10 font-bold">Chưa có công việc</p>}
+              </div>
+            </div>
+
+            {/* IN PROGRESS Column */}
+            <div className="bg-gray-550/30 dark:bg-white/5 rounded-2xl p-4 min-h-[500px] border border-gray-200 dark:border-gray-800/40">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-gray-800">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" /> In Progress
+                </h3>
+                <span className="px-2 py-0.5 bg-gray-250 text-gray-600 dark:bg-gray-800 dark:text-gray-400 text-[10px] font-black rounded-full">
+                  {inProgressTasks.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {inProgressTasks.map(t => <TaskCard key={t.id} task={t} />)}
+                {inProgressTasks.length === 0 && <p className="text-[10px] text-gray-400 text-center py-10 font-bold">Chưa có công việc</p>}
+              </div>
+            </div>
+
+            {/* COMPLETED Column */}
+            <div className="bg-gray-550/30 dark:bg-white/5 rounded-2xl p-4 min-h-[500px] border border-gray-200 dark:border-gray-800/40">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-gray-800">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Completed
+                </h3>
+                <span className="px-2 py-0.5 bg-gray-250 text-gray-600 dark:bg-gray-800 dark:text-gray-400 text-[10px] font-black rounded-full">
+                  {completedTasks.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {completedTasks.map(t => <TaskCard key={t.id} task={t} />)}
+                {completedTasks.length === 0 && <p className="text-[10px] text-gray-400 text-center py-10 font-bold">Chưa có công việc</p>}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* OKR & KPI DASHBOARD PANEL */
+          <div className="space-y-6">
+            {loadingOKRs ? (
+              <div className="flex justify-center py-12 text-gray-400 text-xs">
+                <Loader2 className="w-5 h-5 animate-spin text-[#FF6B00] mr-2" /> Đang tải mục tiêu OKRs...
+              </div>
+            ) : objectives.length === 0 ? (
+              <div className="bg-white dark:bg-[#13131C] p-12 text-center rounded-2xl border border-gray-100 dark:border-gray-800/40 text-gray-400 text-xs font-semibold">
+                🎯 Nhóm chưa tạo Mục tiêu OKR nào cho dự án này.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {objectives.map(obj => (
+                  <Card key={obj.id} className="p-5">
+                    <div className="flex justify-between items-start border-b dark:border-gray-800 pb-3 mb-4">
+                      <div>
+                        <span className="text-[9px] bg-orange-50 dark:bg-orange-950/20 text-[#FF6B00] font-black px-2 py-0.5 rounded border border-orange-100 dark:border-orange-900/20 uppercase">
+                          Mục tiêu (Objective)
+                        </span>
+                        <h4 className="font-black text-gray-800 dark:text-white text-sm mt-1.5">{obj.title}</h4>
+                      </div>
+                      
+                      {/* Objective progress indicator */}
+                      <div className="text-right">
+                        <span className="text-[10px] text-gray-400 block font-bold">Tiến độ tổng hợp</span>
+                        <span className="text-base font-black text-orange-500">{obj.progress}%</span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full bg-gray-100 dark:bg-gray-800 h-2.5 rounded-full overflow-hidden mb-4">
+                      <div className="bg-orange-500 h-full transition-all duration-300" style={{ width: `${obj.progress}%` }}></div>
+                    </div>
+
+                    {/* Key Results list */}
+                    <div className="space-y-3 pl-4 border-l border-gray-100 dark:border-gray-800">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase">
+                        <span>Kết quả then chốt (Key Results)</span>
+                        {isLeader && (
+                          <button
+                            onClick={() => { setSelectedObjId(obj.id); setShowAddKRModal(true); }}
+                            className="text-[#FF6B00] hover:underline flex items-center gap-0.5 cursor-pointer font-black"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" /> Thêm KR
+                          </button>
+                        )}
+                      </div>
+
+                      {obj.keyResults?.length === 0 ? (
+                        <p className="text-[10px] text-gray-400 italic">Chưa có kết quả then chốt nào.</p>
+                      ) : (
+                        obj.keyResults.map((kr: any) => (
+                          <div key={kr.id} className="p-3 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-xl space-y-2">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-semibold text-gray-700 dark:text-gray-200">{kr.title}</span>
+                              <span className="font-bold text-gray-600 dark:text-gray-400">
+                                {kr.currentValue} / {kr.targetValue} {kr.unit}
+                              </span>
+                            </div>
+
+                            {/* KR Progress slider / bar */}
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="range"
+                                min="0"
+                                max={kr.targetValue}
+                                value={kr.currentValue}
+                                onChange={e => handleUpdateKRValue(kr.id, Number(e.target.value))}
+                                className="flex-1 accent-orange-500 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <span className="text-[10px] font-black text-orange-500 w-8 text-right">
+                                {Math.round((kr.currentValue / kr.targetValue) * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* RIGHT SIDE PANEL: Drawer for Team Chat */}
+      <div
+        className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#111119] border-l border-gray-100 dark:border-gray-800 shadow-2xl z-40 transition-transform duration-300 transform flex flex-col ${
+          showChat ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Chat Drawer Header */}
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-orange-50/5 dark:bg-white/5 mt-16">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-[#FF6B00]" />
+            <h3 className="font-black text-gray-800 dark:text-white text-sm">
+              Kênh Chat Nhóm: {selectedTeam?.name}
+            </h3>
+          </div>
+          <button
+            onClick={() => setShowChat(false)}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Chat message logs */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 pr-2 scrollbar-thin">
+          {chatMessages.map((msg, idx) => {
+            const isSelf = msg.userId === user?.id
+            return (
+              <div key={msg.id || idx} className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'} text-xs`}>
+                <span className="text-[8px] text-gray-400 font-bold mb-0.5">
+                  {msg.user?.name} {msg.user?.role === 'manager' && '🎓'}
+                </span>
+                <div
+                  className={`p-2.5 rounded-2xl max-w-[85%] leading-normal font-medium ${
+                    isSelf 
+                      ? 'bg-[#FF6B00] text-white rounded-tr-none' 
+                      : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-tl-none'
+                  }`}
+                >
+                  {msg.message}
+                </div>
+              </div>
+            )
+          })}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Chat input form */}
+        <form onSubmit={handleSendChat} className="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#111119] flex gap-2">
+          <input
+            type="text"
+            placeholder="Gửi tin nhắn cho nhóm..."
+            value={newMsg}
+            onChange={e => setNewMsg(e.target.value)}
+            className="w-full text-xs bg-white dark:bg-[#181824] border dark:border-gray-800 rounded-xl px-3 focus:outline-none focus:border-[#FF6B00]"
+          />
+          <button
+            type="submit"
+            disabled={sendingMsg}
+            className="p-2 bg-[#FF6B00] text-white rounded-xl hover:bg-[#E85A00] transition disabled:opacity-50"
+          >
+            <Send className="w-4.5 h-4.5" />
+          </button>
+        </form>
+      </div>
+
+      {/* CREATE OBJECTIVE MODAL */}
+      {showAddObjModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-100 shadow-2xl animate-scaleUp">
+            <h3 className="text-lg font-black text-gray-800 mb-4">
+              Tạo mục tiêu (Objective) mới
+            </h3>
+
+            <form onSubmit={handleCreateObjective} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Tên mục tiêu *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Hoàn thiện sản phẩm mẫu (MVP)"
+                  value={newObjTitle}
+                  onChange={e => setNewObjTitle(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00]"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="submit"
+                  disabled={submittingObj}
+                  className="flex-1 py-2.5 bg-[#FF6B00] text-white text-[11px] font-bold rounded-xl shadow-md hover:bg-[#E85A00] transition flex items-center justify-center"
+                >
+                  {submittingObj ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tạo mục tiêu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddObjModal(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-500 text-[11px] font-bold rounded-xl hover:bg-gray-50 transition"
+                >
+                  Hủy bỏ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE KEY RESULT MODAL */}
+      {showAddKRModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-100 shadow-2xl animate-scaleUp">
+            <h3 className="text-lg font-black text-gray-800 mb-4">
+              Thêm kết quả then chốt (Key Result)
+            </h3>
+
+            <form onSubmit={handleCreateKeyResult} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Tên kết quả then chốt *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Thu thập 50 câu trả lời khảo sát"
+                  value={krTitle}
+                  onChange={e => setKrTitle(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    Giá trị mục tiêu *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={krTargetValue}
+                    onChange={e => setKrTargetValue(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#FF6B00]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    Đơn vị đo lường *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="%, người, bài viết,..."
+                    value={krUnit}
+                    onChange={e => setKrUnit(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#FF6B00]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="submit"
+                  disabled={submittingKR}
+                  className="flex-1 py-2.5 bg-[#FF6B00] text-white text-[11px] font-bold rounded-xl shadow-md hover:bg-[#E85A00] transition flex items-center justify-center"
+                >
+                  {submittingKR ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tạo KR'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddKRModal(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-500 text-[11px] font-bold rounded-xl hover:bg-gray-50 transition"
+                >
+                  Hủy bỏ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-100 shadow-2xl animate-scaleUp">
+            <h3 className="text-lg font-black text-gray-800 mb-4">Thêm công việc mới</h3>
+            <form onSubmit={handleCreateTask} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Tên công việc *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Thiết kế giao diện"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Mô tả công việc</label>
+                <textarea
+                  placeholder="Mô tả chi tiết nhiệm vụ..."
+                  value={newDesc}
+                  onChange={e => setNewDesc(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#FF6B00] resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Người thực hiện *</label>
+                <select
+                  required
+                  value={newAssignee}
+                  onChange={e => setNewAssignee(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00] bg-white font-bold"
+                >
+                  <option value="">-- Chọn thành viên --</option>
+                  {selectedTeam?.members?.map((m: any) => (
+                    <option key={m.userId} value={m.userId}>{m.user?.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Độ ưu tiên</label>
+                  <select
+                    value={newPriority}
+                    onChange={e => setNewPriority(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00] bg-white font-bold"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Hạn hoàn thành</label>
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    onChange={e => setNewDueDate(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#FF6B00]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-[#FF6B00] text-white text-[11px] font-bold rounded-xl shadow-md hover:bg-[#E85A00] transition"
+                >
+                  Tạo mới
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-500 text-[11px] font-bold rounded-xl hover:bg-gray-50 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  )
+}

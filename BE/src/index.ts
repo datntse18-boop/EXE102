@@ -1,0 +1,78 @@
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import authRoutes from './routes/auth.routes'
+import userRoutes from './routes/user.routes'
+import teamRoutes from './routes/team.routes'
+import projectRoutes from './routes/project.routes'
+import taskRoutes from './routes/task.routes'
+import invitationRoutes from './routes/invitation.routes'
+import paymentRoutes from './routes/payment.routes'
+import aiRoutes from './routes/ai.routes'
+import reportRoutes from './routes/report.routes'
+import weeklyRoutes from './routes/weekly.routes'
+import mentoringRoutes from './routes/mentoring.routes'
+import evaluationRoutes from './routes/evaluation.routes'
+import gradeRoutes from './routes/grade.routes'
+import jobRoutes from './routes/job.routes'
+import notificationRoutes from './routes/notification.routes'
+import chatRoutes from './routes/chat.routes'
+import okrRoutes from './routes/okr.routes'
+
+dotenv.config()
+
+const app = express()
+const PORT = process.env.PORT || 3000
+
+// Middleware
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'StudyConnect API is running 🚀', timestamp: new Date().toISOString() })
+})
+
+// API Routes
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/teams', teamRoutes)
+app.use('/api/projects', projectRoutes)
+app.use('/api/tasks', taskRoutes)
+app.use('/api/invitations', invitationRoutes)
+app.use('/api/payments', paymentRoutes)
+app.use('/api/ai', aiRoutes)
+app.use('/api/reports', reportRoutes)
+app.use('/api/weekly', weeklyRoutes)
+app.use('/api/mentoring', mentoringRoutes)
+app.use('/api/evaluation', evaluationRoutes)
+app.use('/api/grades', gradeRoutes)
+app.use('/api/jobs', jobRoutes)
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/chat', chatRoutes)
+app.use('/api/okr', okrRoutes)
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' })
+})
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack)
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+  })
+})
+
+app.listen(PORT, () => {
+  console.log(`🚀 StudyConnect API running on http://localhost:${PORT}`)
+  console.log(`📚 Environment: ${process.env.NODE_ENV}`)
+})
+
+export default app

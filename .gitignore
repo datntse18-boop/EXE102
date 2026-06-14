@@ -1,0 +1,14 @@
+# Root gitignore for EXE102
+pg_installer.exe
+*.log
+
+# Backend ignores
+BE/node_modules/
+BE/dist/
+BE/.env
+
+# Frontend ignores
+FE/StudyConnect/FE/node_modules/
+FE/StudyConnect/FE/dist/
+FE/StudyConnect/FE/.env
+FE/StudyConnect/.git

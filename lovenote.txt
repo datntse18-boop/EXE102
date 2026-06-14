@@ -1,0 +1,111 @@
+14 thg 3 at 22:02
+
+DeM3n
+Fix the Avatar click navigation logic in the Header component.
+
+Current issue: When clicking the user avatar in the top-right corner of the header, the system always navigates to the Student Profile page. This happens even when the logged-in user is not a student.
+
+Goal: Make the avatar navigation role-based instead of hardcoded.
+
+Requirements:
+
+Detect the logged-in user's role from the authentica ...
+
+Make avatar navigation role-based
+Done — the avatar now routes lecturers to /lecturer and students to /profile, driven by the role prop already passed through AppLayout.
+
+15 thg 3 at 13:28
+
+Nameless
+IMPORTANT: Do NOT change any UI layout, styling, spacing, color theme, typography, or component structure. Only enhance logic, academic metrics, and lifecycle tracking. Do not redesign or refactor any UI components.
+
+==================================
+
+EXE STUDYCONNECT – EXE101 STARTUP LIFECYCLE ANALYTICS ENHANCEMENT
+
+(Applies only to /lecturer page)
+
+This enhancement must strictly align with the ...
+
+Add member profile modal
+Added click-to-view member profile modal in the lecturer dashboard — clicking any member's name/avatar in the team detail panel opens a dialog showing their full name, student ID, team role, inferred startup skills (based on task types and BMC activity), contribution summary, and recent activity log.
+
+15 thg 3 at 18:13
+
+Nameless
+IMPORTANT: Do NOT change any UI layout, styling, spacing, color theme, typography, or component structure. Only enhance logic, academic metrics, and identity displays. Do not redesign or refactor any UI components.
+
+==================================
+
+EXE STUDYCONNECT – MULTI-ROLE IDENTITY LOGIC (STUDENT VS. LECTURER)
+
+(Applies to all pages: /analytics, /lecturer, /profile, /dashboard, etc.)
+
+==== ...
+
+Add identity constants
+Add role-based identity constants
+Implemented role-based identity logic: the TopBar now displays "LS" (Dr. Lê Startup) on /lecturer and "NA" (Nguyễn Văn An) on student pages, with all identity data centralized in src/lib/identity.ts — no UI changes made.
+
+15 thg 3 at 18:20
+
+Nameless
+IMPORTANT: Do NOT change any UI layout, styling, spacing, color theme, typography, or component structure. Only enhance logic and interaction flow. Do not redesign or refactor any UI components.
+
+==================================
+
+EXE STUDYCONNECT – LECTURER PROFILE INTERACTION & EDIT LOGIC
+
+(Applies to /lecturer page)
+
+==================================
+
+AVATAR CLICK TRIGGER
+Enable click i ...
+Add lecturer profile hook
+Add lecturer profile modal with edit logic
+Added an editable lecturer profile modal triggered by avatar click on /lecturer. The profile shows Dr. Lê Startup's identity with editable specialization, bio, and skills fields, plus read-only mentorship stats. Changes persist via localStorage.
+
+26 thg 3 at 22:04
+
+Nguyễn Thế Hoàng Sơn
+IMPORTANT: Do NOT change any UI layout, styling, spacing, color theme, typography, or component structure. Only enhance logic and interaction flow. Do not redesign or refactor any UI components.
+
+Apply to only the ai assistant page and the top left where it says EXE STUDYCONNECT. Remove the words EXE from them
+
+Remove EXE from header label
+Removed "EXE" from the AI Assistant page (title + welcome message) and the sidebar logo text — now reads "StudyConnect" and "AI Assistant".
+
+28 thg 3 at 8:49
+
+Nameless
+IMPORTANT: Do NOT change any UI layout, styling, spacing, color theme, typography, or component structure. Maintain the existing design system and component library exactly as they are. Focus exclusively on enhancing the logic, state management, and interaction flow.
+
+Please implement the following functional updates:
+
+Admin Quick Login: Add a "Login as Admin" button to the Login page. When clicke ...
+
+Add admin quick login and upgrades
+Add Admin role and quick login
+Add subscription feature to dashboards
+Create Admin Revenue Management page
+All three features implemented:
+
+Admin Quick Login — "Login as Admin" button on the login page that bypasses credentials and navigates to /admin
+Subscription Section — Free/Premium (200,000 VND) tier cards added to both Student and Lecturer dashboards with simulated purchase logic persisted to localStorage
+Admin Revenue Management — /admin page showing total revenue and a table of all purchases with username, role, package, price, and date
+28 thg 3 at 8:54
+
+Nameless
+IMPORTANT: Do NOT change any existing UI layout, styling, spacing, color theme, typography, or component structure for the current Student and Lecturer pages. Only enhance the logic, interaction flow, and add the specific navigation items requested below.
+
+Task: Implement Role-Based Logic and Subscription Features
+
+Admin Quick Access (Login Page): > * Add a "Quick Login: Admin" button. Clicking th ...
+
+Add admin layout and subscriptions
+All features implemented:
+
+"Quick Login: Admin" button on the login page — bypasses credentials, routes to /admin
+"Upgrade Plan" nav item added to both Student and Lecturer sidebars, linking to a dedicated /subscription page with Free/Premium (200,000 VND) tiers
+Admin Dashboard with its own layout/sidebar (separate from Student/Lecturer), showing "Quản lý nguồn thu" (Revenue Management) with total revenue, premium user count, and a full purchase history table

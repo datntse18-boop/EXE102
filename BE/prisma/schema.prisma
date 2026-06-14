@@ -1,0 +1,389 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  member
+  leader
+  manager
+  admin
+}
+
+enum SubscriptionPlan {
+  free
+  premium
+  enterprise
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  completed
+}
+
+enum TeamStatus {
+  active
+  at_risk
+  inactive
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum PaymentStatus {
+  completed
+  pending
+  failed
+}
+
+enum AIFeature {
+  idea_generator
+  team_matching
+  analytics
+}
+
+model User {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  password     String
+  role         Role             @default(member)
+  avatar       String?
+  status       String           @default("active") // active | suspended
+  subscription SubscriptionPlan @default(free)
+  classCode    String?          // Unique class code for lecturers or joined class code for students
+  skills       String?          // Professional skills (comma separated)
+  desiredRole  String?          // Desired role in team
+  commitmentHours Int?          // Available hours per week
+  pastProjects String?          // Past project experience
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  lastActive   DateTime         @default(now())
+
+  // Relations
+  teamMemberships TeamMember[]
+  ledTeams        Team[]        @relation("TeamLeader")
+  tasks           Task[]        @relation("TaskAssignee")
+  sentInvitations     Invitation[]  @relation("InvitationSender")
+  receivedInvitations Invitation[]  @relation("InvitationReceiver")
+  payments        Payment[]
+  aiUsages        AIUsage[]
+  refreshTokens   RefreshToken[]
+  lecturerSlots   MentoringSlot[] @relation("LecturerSlots")
+  chatMessages    ChatMessage[]
+  evaluationsGiven   PeerEvaluation[] @relation("Evaluator")
+  evaluationsReceived PeerEvaluation[] @relation("Evaluatee")
+  gradesGiven        TeamGrade[]      @relation("GradedBy")
+  jobApplications    JobApplication[]
+  projectVotes       ProjectVote[]
+  projectComments    ProjectComment[]
+  notifications      Notification[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Team {
+  id          String     @id @default(cuid())
+  name        String
+  description String
+  leaderId    String
+  leader      User       @relation("TeamLeader", fields: [leaderId], references: [id])
+  status      TeamStatus @default(active)
+  healthScore Int        @default(100) // 0-100
+  classCode   String?    // Associated class code for the team
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  members        TeamMember[]
+  projects       Project[]
+  weeklyReports  WeeklyReport[]
+  mentoringSlots MentoringSlot[]
+  peerEvaluations PeerEvaluation[]
+  grades          TeamGrade[]
+  jobPosts        JobPost[]
+  chatMessages    ChatMessage[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  teamId      String
+  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  status      String  @default("planning") // planning | active | completed
+  milestone   Int     @default(1)
+  progress      Int     @default(0) // 0-100
+  dueDate       DateTime?
+  logoUrl       String?
+  pitchVideoUrl String?
+  canvasModel   String?     // JSON string representing 9 boxes of Business Model Canvas
+  isPublic      Boolean     @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tasks Task[]
+  votes ProjectVote[]
+  comments ProjectComment[]
+  objectives ProjectObjective[]
+
+  @@map("projects")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  assignedTo  String
+  assignee    User       @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  status      TaskStatus @default(todo)
+  priority    String     @default("medium") // low | medium | high
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("tasks")
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  teamId     String
+  fromUserId String
+  toUserId   String
+  fromUser   User             @relation("InvitationSender", fields: [fromUserId], references: [id])
+  toUser     User             @relation("InvitationReceiver", fields: [toUserId], references: [id])
+  status     InvitationStatus @default(pending)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@map("invitations")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  amount    Float
+  plan      SubscriptionPlan
+  status    PaymentStatus @default(pending)
+  createdAt DateTime      @default(now())
+
+  @@map("payments")
+}
+
+model AIUsage {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  feature   AIFeature
+  count     Int       @default(1)
+  date      DateTime  @default(now())
+  prompt    String?
+  response  String?
+
+  @@map("ai_usages")
+}
+
+model WeeklyReport {
+  id           String   @id @default(cuid())
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  weekNumber   Int
+  achievements String
+  plans        String
+  blockers     String
+  aiSummary    String?
+  createdAt    DateTime @default(now())
+
+  @@map("weekly_reports")
+}
+
+model MentoringSlot {
+  id             String   @id @default(cuid())
+  lecturerId     String
+  lecturer       User     @relation("LecturerSlots", fields: [lecturerId], references: [id], onDelete: Cascade)
+  startTime      DateTime
+  endTime        DateTime
+  status         String   @default("available") // available | booked
+  bookedByTeamId String?
+  bookedByTeam   Team?    @relation(fields: [bookedByTeamId], references: [id], onDelete: SetNull)
+  topic          String?
+  meetingLink    String?
+  createdAt      DateTime @default(now())
+
+  @@map("mentoring_slots")
+}
+
+model PeerEvaluation {
+  id              String   @id @default(cuid())
+  evaluatorId     String
+  evaluator       User     @relation("Evaluator", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  evaluateeId     String
+  evaluatee       User     @relation("Evaluatee", fields: [evaluateeId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  milestone       Int
+  contribution    Int
+  professionalism Int
+  communication   Int
+  punctuality     Int
+  qualityOfWork   Int
+  feedback        String?
+  createdAt       DateTime @default(now())
+
+  @@map("peer_evaluations")
+}
+
+model TeamGrade {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  milestone   Int
+  score       Float
+  feedback    String?
+  gradedById  String
+  gradedBy    User     @relation("GradedBy", fields: [gradedById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("team_grades")
+}
+
+model JobPost {
+  id              String           @id @default(cuid())
+  teamId          String
+  team            Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  commitmentHours Int
+  status          String           @default("open")
+  createdAt       DateTime         @default(now())
+  applications    JobApplication[]
+
+  @@map("job_posts")
+}
+
+model JobApplication {
+  id           String   @id @default(cuid())
+  jobPostId    String
+  jobPost      JobPost  @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  introduction String
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+
+  @@map("job_applications")
+}
+
+model ProjectVote {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@map("project_votes")
+}
+
+model ProjectComment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@map("project_comments")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+model ProjectObjective {
+  id        String             @id @default(cuid())
+  projectId String
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  progress  Int                @default(0)
+  createdAt DateTime           @default(now())
+  keyResults ProjectKeyResult[]
+
+  @@map("project_objectives")
+}
+
+model ProjectKeyResult {
+  id          String           @id @default(cuid())
+  objectiveId String
+  objective   ProjectObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  title       String
+  targetValue Int              @default(100)
+  currentValue Int             @default(0)
+  unit        String           @default("%")
+  createdAt   DateTime         @default(now())
+
+  @@map("project_key_results")
+}
