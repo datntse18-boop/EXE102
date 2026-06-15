@@ -444,3 +444,34 @@ export const slideService = {
   },
 }
 
+export const mentorService = {
+  getMentorMessages: async (projectId: string) => {
+    const { data } = await api.get(`/mentor/projects/${projectId}/mentor`)
+    return data.data
+  },
+
+  sendMentorMessage: async (projectId: string, message: string) => {
+    const { data } = await api.post(`/mentor/projects/${projectId}/mentor`, { message })
+    return data.data
+  },
+}
+
+export const crowdfundingService = {
+  investInProject: async (projectId: string, amount: number) => {
+    const { data } = await api.post(`/investments/${projectId}/invest`, { amount })
+    return data.data
+  },
+
+  getProjectLeaderboard: async () => {
+    const { data } = await api.get('/investments/leaderboard')
+    return data.data
+  },
+}
+
+export const peerRadarService = {
+  getTeamRadarStats: async (teamId: string) => {
+    const { data } = await api.get(`/evaluation/team-radar/${teamId}`)
+    return data.data
+  },
+}
+

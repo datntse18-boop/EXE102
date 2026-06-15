@@ -113,12 +113,16 @@ export const bookSlot = async (req: AuthRequest, res: Response): Promise<void> =
       return
     }
 
+    // Auto-generate Zoom meeting link if not set
+    const zoomLink = slot.meetingLink || `https://zoom.us/j/${Math.floor(100000000 + Math.random() * 900000000)}?pwd=${Math.random().toString(36).substring(2, 10)}`
+
     const updatedSlot = await prisma.mentoringSlot.update({
       where: { id },
       data: {
         status: 'booked',
         bookedByTeamId: teamId,
-        topic
+        topic,
+        meetingLink: zoomLink
       },
       include: {
         lecturer: { select: { id: true, name: true, email: true } },

@@ -20,6 +20,8 @@ import chatRoutes from './routes/chat.routes'
 import okrRoutes from './routes/okr.routes'
 import surveyRoutes from './routes/survey.routes'
 import financialRoutes from './routes/financial.routes'
+import mentorRoutes from './routes/mentor.routes'
+import investmentRoutes from './routes/investment.routes'
 
 dotenv.config()
 
@@ -59,6 +61,8 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/okr', okrRoutes)
 app.use('/api/surveys', surveyRoutes)
 app.use('/api/financial', financialRoutes)
+app.use('/api/mentor', mentorRoutes)
+app.use('/api/investments', investmentRoutes)
 
 // 404 handler
 app.use((req, res) => {

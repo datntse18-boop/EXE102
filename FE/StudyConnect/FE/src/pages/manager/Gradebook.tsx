@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { gradeService, teamService, weeklyReportService } from '../../services/apiServices'
+import { gradeService, teamService, weeklyReportService, peerRadarService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import Card from '../../components/cards/Card'
-import { Award, Loader2, Save, Users, FileSpreadsheet, Edit3, MessageSquare, Flame, Printer } from 'lucide-react'
+import { Award, Loader2, Save, Users, FileSpreadsheet, Edit3, MessageSquare, Flame, Printer, ShieldAlert, BarChart2, Zap } from 'lucide-react'
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts'
 
 export default function Gradebook() {
   const { user, role } = useAuth()
@@ -10,6 +11,24 @@ export default function Gradebook() {
   const [teams, setTeams] = useState<any[]>([])
   const [weeklyReports, setWeeklyReports] = useState<Record<string, number[]>>({})
   const [studentGrades, setStudentGrades] = useState<any[]>([])
+
+  // Radar & Peer Evaluation States
+  const [activeRadarTeam, setActiveRadarTeam] = useState<any>(null)
+  const [radarData, setRadarData] = useState<any[]>([])
+  const [loadingRadar, setLoadingRadar] = useState(false)
+
+  const loadRadarStats = async (teamId: string) => {
+    setLoadingRadar(true)
+    try {
+      const data = await peerRadarService.getTeamRadarStats(teamId)
+      setRadarData(data)
+    } catch (err) {
+      console.error('Error loading radar stats:', err)
+      setRadarData([])
+    } finally {
+      setLoadingRadar(false)
+    }
+  }
   
   // Grade Form Modal States
   const [showModal, setShowModal] = useState(false)
@@ -38,6 +57,10 @@ export default function Gradebook() {
       if (role === 'manager' || role === 'admin') {
         const data = await gradeService.getClassGrades({ classCode })
         setTeams(data)
+        if (data.length > 0) {
+          setActiveRadarTeam(data[0])
+          loadRadarStats(data[0].id)
+        }
 
         // Load weekly reports for each team concurrently
         const reportsMap: Record<string, number[]> = {}
@@ -59,6 +82,7 @@ export default function Gradebook() {
           const activeTeamId = studentTeams[0].id
           const grades = await gradeService.getTeamGrades(activeTeamId)
           setStudentGrades(grades)
+          loadRadarStats(activeTeamId)
         }
       }
     } catch (err) {
@@ -203,6 +227,134 @@ export default function Gradebook() {
     } catch (e) {
       return null
     }
+  }
+
+  const renderRadarPanel = () => {
+    if (!activeRadarTeam) return null
+
+    const criteria = [
+      { key: 'contribution', label: 'Đóng góp' },
+      { key: 'professionalism', label: 'Chuyên nghiệp' },
+      { key: 'communication', label: 'Giao tiếp' },
+      { key: 'punctuality', label: 'Giờ giấc' },
+      { key: 'qualityOfWork', label: 'Chất lượng' }
+    ]
+
+    const chartData = criteria.map(c => {
+      const item: any = { subject: c.label, fullMark: 10 }
+      radarData.forEach(member => {
+        item[member.name] = member.averages?.[c.key] ?? 8.0
+      })
+      return item
+    })
+
+    const colors = ['#FF6B00', '#00C49F', '#0088FE', '#FFBB28', '#FF8042', '#8884d8']
+
+    return (
+      <Card className="no-print">
+        <div className="flex justify-between items-center border-b dark:border-gray-800 pb-2.5 mb-4">
+          <h3 className="font-bold text-gray-800 dark:text-white text-xs flex items-center gap-1.5">
+            <BarChart2 className="w-4 h-4 text-[#FF6B00]" />
+            Radar Đóng Góp & Năng Lực Nhóm: <span className="text-[#FF6B00]">{activeRadarTeam.name}</span>
+          </h3>
+          <span className="text-[9px] bg-orange-50 dark:bg-orange-950/20 text-[#FF6B00] font-black px-2 py-0.5 rounded border border-orange-100 dark:border-orange-900/20 uppercase">
+            Peer Evaluation
+          </span>
+        </div>
+
+        {loadingRadar ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-xs">
+            <Loader2 className="w-6 h-6 animate-spin text-[#FF6B00] mb-2" />
+            Đang tải dữ liệu radar đánh giá...
+          </div>
+        ) : radarData.length === 0 ? (
+          <p className="text-[11px] text-gray-400 italic text-center py-8 font-bold">Chưa có dữ liệu đánh giá chéo từ đồng đội.</p>
+        ) : (
+          <div className="space-y-6">
+            {/* Chart Container */}
+            <div className="h-[260px] flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={chartData}>
+                  <PolarGrid stroke="#e5e7eb" className="dark:stroke-gray-800" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fontWeight: 700, fill: '#6b7280' }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fontSize: 8, fontWeight: 700 }} />
+                  
+                  {radarData.map((member, index) => (
+                    <Radar
+                      key={member.userId}
+                      name={member.name}
+                      dataKey={member.name}
+                      stroke={colors[index % colors.length]}
+                      fill={colors[index % colors.length]}
+                      fillOpacity={0.15}
+                    />
+                  ))}
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#181824',
+                      border: '1px solid #282836',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '9px'
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Members List with freeRiderAlert */}
+            <div className="space-y-2.5">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block border-b dark:border-gray-800 pb-1">Mức độ hoạt động & Cảnh báo</span>
+              
+              {radarData.map((member, index) => (
+                <div
+                  key={member.userId}
+                  className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition ${
+                    member.freeRiderAlert 
+                      ? 'border-red-500/30 bg-red-500/5 dark:bg-red-950/5' 
+                      : 'border-gray-100 dark:border-gray-850/40 bg-gray-50/50 dark:bg-white/5'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center font-black text-[8px] text-white shrink-0"
+                        style={{ backgroundColor: colors[index % colors.length] }}
+                      >
+                        {member.name.charAt(0)}
+                      </div>
+                      <span className="font-bold text-xs text-gray-700 dark:text-gray-300 leading-none">{member.name}</span>
+                    </div>
+
+                    {member.freeRiderAlert && (
+                      <span className="bg-red-500 text-white font-black text-[8px] px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5 animate-pulse shadow-sm">
+                        <ShieldAlert className="w-2.5 h-2.5" />
+                        Cảnh báo Free-Rider
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[9px] text-gray-500 dark:text-gray-405 font-semibold">
+                    <div>
+                      <span>Điểm TB đóng góp: </span>
+                      <strong className="text-gray-800 dark:text-gray-250">
+                        {member.averages?.contribution ?? 8.0} / 10
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Tasks hoàn thành: </span>
+                      <strong className="text-gray-800 dark:text-gray-250">
+                        {member.tasksCompleted} / {member.totalTasks}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+    )
   }
 
   return (
@@ -411,8 +563,18 @@ export default function Gradebook() {
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-850 text-xs text-gray-700 dark:text-gray-300 font-medium">
                       {teams.map(team => (
-                        <tr key={team.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-850/30 transition">
-                          <td className="py-3 px-4 font-black">{team.name}</td>
+                        <tr
+                          key={team.id}
+                          className={`hover:bg-gray-50/50 dark:hover:bg-gray-850/30 transition ${
+                            activeRadarTeam?.id === team.id ? 'bg-orange-50/15 dark:bg-orange-950/10 border-l-2 border-l-[#FF6B00]' : ''
+                          }`}
+                        >
+                          <td
+                            className="py-3 px-4 font-black cursor-pointer hover:text-[#FF6B05] transition"
+                            onClick={() => { setActiveRadarTeam(team); loadRadarStats(team.id); }}
+                          >
+                            {team.name}
+                          </td>
                           <td className="py-3 px-4 text-gray-500">{team.leader?.name || 'Chưa rõ'}</td>
                           <td className="py-3 px-4 text-center font-bold text-gray-850 dark:text-gray-200">
                             <div>{getMilestoneGrade(team, 1)}</div>
@@ -448,6 +610,12 @@ export default function Gradebook() {
               )}
             </Card>
           </div>
+
+          {activeRadarTeam && (
+            <div className="mt-6">
+              {renderRadarPanel()}
+            </div>
+          )}
         </div>
       ) : (
         /* STUDENT VIEW */
@@ -519,6 +687,10 @@ export default function Gradebook() {
                 </div>
               )}
             </Card>
+          </div>
+
+          <div className="md:col-span-1 space-y-6">
+            {renderRadarPanel()}
           </div>
         </div>
       )}

@@ -89,6 +89,8 @@ model User {
   projectVotes       ProjectVote[]
   projectComments    ProjectComment[]
   notifications      Notification[]
+  balance            Int              @default(100000)
+  investments        Investment[]
 
   @@map("users")
 }
@@ -164,8 +166,10 @@ model Project {
   votes ProjectVote[]
   comments ProjectComment[]
   objectives ProjectObjective[]
-  surveys    CustomerSurvey[]
+  surveys        CustomerSurvey[]
   financialModel FinancialModel?
+  investments    Investment[]
+  mentorMessages AIMentorMessage[]
 
   @@map("projects")
 }
@@ -421,5 +425,28 @@ model FinancialModel {
   updatedAt     DateTime @updatedAt
 
   @@map("financial_models")
+}
+
+model AIMentorMessage {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      String   // "user" | "model"
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("ai_mentor_messages")
+}
+
+model Investment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@map("investments")
 }
 

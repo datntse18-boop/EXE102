@@ -178,3 +178,116 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response): Promi
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// GET /api/evaluation/team-radar/:teamId
+export const getTeamRadarStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { teamId } = req.params as { teamId: string }
+
+    // Fetch team and members
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { id: true, name: true, avatar: true }
+            }
+          }
+        },
+        projects: {
+          select: { id: true }
+        }
+      }
+    })
+
+    if (!team) {
+      res.status(404).json({ success: false, message: 'Team not found' })
+      return
+    }
+
+    const projectIds = team.projects.map(p => p.id)
+
+    // Fetch all completed tasks in this team
+    const teamTasks = await prisma.task.findMany({
+      where: { projectId: { in: projectIds } }
+    })
+
+    const totalCompletedTeamTasks = teamTasks.filter(t => t.status === 'completed').length
+
+    // Loop through each member to calculate their stats
+    const radarData = await Promise.all(
+      team.members.map(async (member) => {
+        const userId = member.user.id
+
+        // Fetch peer evaluations where this user is the evaluatee
+        const evals = await prisma.peerEvaluation.findMany({
+          where: { evaluateeId: userId, teamId }
+        })
+
+        const count = evals.length
+        let averages = {
+          contribution: 8.0,
+          professionalism: 8.0,
+          communication: 8.0,
+          punctuality: 8.0,
+          qualityOfWork: 8.0
+        }
+
+        if (count > 0) {
+          const sum = evals.reduce(
+            (acc, curr) => {
+              acc.contribution += curr.contribution
+              acc.professionalism += curr.professionalism
+              acc.communication += curr.communication
+              acc.punctuality += curr.punctuality
+              acc.qualityOfWork += curr.qualityOfWork
+              return acc
+            },
+            { contribution: 0, professionalism: 0, communication: 0, punctuality: 0, qualityOfWork: 0 }
+          )
+          averages = {
+            contribution: Math.round((sum.contribution / count) * 10) / 10,
+            professionalism: Math.round((sum.professionalism / count) * 10) / 10,
+            communication: Math.round((sum.communication / count) * 10) / 10,
+            punctuality: Math.round((sum.punctuality / count) * 10) / 10,
+            qualityOfWork: Math.round((sum.qualityOfWork / count) * 10) / 10
+          }
+        }
+
+        // Calculate task stats
+        const memberTasks = teamTasks.filter(t => t.assignedTo === userId)
+        const completedCount = memberTasks.filter(t => t.status === 'completed').length
+        const totalCount = memberTasks.length
+
+        // Free-rider detection logic:
+        // Alert if peer evaluations contribution score is below 5.0,
+        // OR if there are completed tasks in the team, and they completed less than 15% of the team's total completed tasks while total team completed is >= 5, and their completion count is <= 1.
+        let freeRiderAlert = false
+        if (count > 0 && averages.contribution < 5.0) {
+          freeRiderAlert = true
+        } else if (totalCompletedTeamTasks >= 5) {
+          const completionRatio = completedCount / totalCompletedTeamTasks
+          if (completionRatio < 0.15 && completedCount <= 1) {
+            freeRiderAlert = true
+          }
+        }
+
+        return {
+          userId,
+          name: member.user.name,
+          avatar: member.user.avatar,
+          averages,
+          tasksCompleted: completedCount,
+          totalTasks: totalCount,
+          freeRiderAlert
+        }
+      })
+    )
+
+    res.json({ success: true, data: radarData })
+  } catch (err) {
+    console.error('Radar stats error:', err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}

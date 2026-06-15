@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
-import { projectService } from '../../services/apiServices'
+import { projectService, crowdfundingService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import Card from '../../components/cards/Card'
-import { Search, Loader2, Sparkles, Video, Globe, Heart, MessageSquare, Send, Award, User } from 'lucide-react'
+import { Search, Loader2, Sparkles, Video, Globe, Heart, MessageSquare, Send, Award, User, Coins, Wallet, Flame } from 'lucide-react'
 
 export default function ProjectShowcase() {
-  const { user } = useAuth()
+  const { user, updateUserData } = useAuth()
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProject, setSelectedProject] = useState<any>(null)
+
+  // Crowdfunding Simulation States
+  const [investmentAmount, setInvestmentAmount] = useState<string>('5000')
+  const [investing, setInvesting] = useState(false)
+  const [crowdLeaderboard, setCrowdLeaderboard] = useState<any[]>([])
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
 
   // Comments & Interaction States
   const [comments, setComments] = useState<any[]>([])
@@ -27,8 +33,66 @@ export default function ProjectShowcase() {
     }
   }
 
+  const fetchLeaderboard = async () => {
+    setLoadingLeaderboard(true)
+    try {
+      const data = await crowdfundingService.getProjectLeaderboard()
+      setCrowdLeaderboard(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingLeaderboard(false)
+    }
+  }
+
+  const handleInvest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !investmentAmount) return
+    const amountNum = Number(investmentAmount)
+    if (isNaN(amountNum) || amountNum <= 0) {
+      alert('Số tiền đầu tư phải lớn hơn 0')
+      return
+    }
+
+    if (user?.balance !== undefined && user.balance < amountNum) {
+      alert('Số dư StudyCoins của bạn không đủ!')
+      return
+    }
+
+    setInvesting(true)
+    try {
+      const res = await crowdfundingService.investInProject(selectedProject.id, amountNum)
+      alert(res.message || 'Đầu tư thành công!')
+      
+      if (res.balance !== undefined) {
+        updateUserData({ balance: res.balance })
+      }
+
+      await fetchPublicProjects()
+      await fetchLeaderboard()
+
+      setSelectedProject((prev: any) => {
+        if (!prev) return null
+        const updatedInvestments = [...(prev.investments || [])]
+        updatedInvestments.push({ amount: amountNum })
+        return {
+          ...prev,
+          investments: updatedInvestments
+        }
+      })
+
+      setInvestmentAmount('5000')
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.message || 'Đầu tư thất bại. Vui lòng thử lại.')
+    } finally {
+      setInvesting(false)
+    }
+  }
+
   useEffect(() => {
     fetchPublicProjects()
+    fetchLeaderboard()
   }, [])
 
   const fetchComments = async (projectId: string) => {
@@ -183,6 +247,23 @@ export default function ProjectShowcase() {
         
         {/* LEFT COLUMN: Projects List & Leaderboard (2 cols) */}
         <div className="md:col-span-2 space-y-6">
+          {/* Ví StudyCoins Card */}
+          <Card className="bg-[#181824] border-gray-800 text-white p-5 rounded-2xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-[9px] text-gray-400 uppercase font-black tracking-wider block">Ví Tiền Giả Lập</span>
+                <span className="text-lg font-black text-[#FF6B00] flex items-center gap-1 mt-1">
+                  <Coins className="w-5 h-5 text-yellow-500 fill-yellow-500/20" />
+                  {(user?.balance !== undefined ? user.balance : 100000).toLocaleString()} <span className="text-[10px] text-gray-400">StudyCoins</span>
+                </span>
+              </div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-2xl">
+                <Wallet className="w-5 h-5 text-gray-300" />
+              </div>
+            </div>
+            <p className="text-[9px] text-gray-400 mt-3 italic leading-normal">Dùng số coins này để đầu tư cho các dự án khởi nghiệp tiềm năng trong lớp học!</p>
+          </Card>
+
           {/* Projects list card */}
           <Card>
             <div className="relative mb-4">
@@ -265,6 +346,46 @@ export default function ProjectShowcase() {
               ))}
             </div>
           </Card>
+
+          {/* Crowdfunding Leaderboard Card */}
+          <Card className="bg-gradient-to-b from-white to-orange-50/10 border-orange-100 dark:from-[#13131C] dark:to-orange-950/5 dark:border-gray-800/40">
+            <h3 className="font-bold text-gray-800 dark:text-gray-150 text-xs border-b dark:border-gray-800 pb-2 mb-3 flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-[#FF6B00]" />
+              Xếp hạng Gọi vốn Startup 🪙
+            </h3>
+
+            <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+              {loadingLeaderboard ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#FF6B00]" />
+                </div>
+              ) : crowdLeaderboard.length === 0 ? (
+                <p className="text-[10px] text-gray-400 italic text-center">Chưa có dự án nào nhận được vốn đầu tư.</p>
+              ) : (
+                crowdLeaderboard.map((p, idx) => (
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 bg-white dark:bg-[#181824] border border-gray-100 dark:border-gray-800/40 rounded-xl shadow-sm">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs ${
+                      idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-gray-150 text-gray-700' : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-black text-xs text-gray-800 dark:text-white truncate block">{p.name}</span>
+                      <span className="text-[9px] text-gray-400 block font-bold truncate">Nhóm: {p.teamName}</span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-black text-[#FF6B00] block">
+                        {(p.totalFunded || 0).toLocaleString()} 🪙
+                      </span>
+                      <span className="text-[8px] text-gray-400 block">
+                        {p.investorCount || 0} lượt
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
 
         {/* RIGHT COLUMN: Detailed View, Canvas, & Comments (3 cols) */}
@@ -284,6 +405,15 @@ export default function ProjectShowcase() {
                       <p className="text-xs text-gray-400 font-bold mt-1 uppercase">
                         Đội ngũ sáng lập: <span className="text-[#FF6B00]">{selectedProject.team?.name}</span>
                       </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="bg-[#FF6B00]/15 text-[#FF6B00] border border-[#FF6B00]/30 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Coins className="w-3 h-3 text-yellow-500 fill-yellow-500/20" />
+                          Đã gọi vốn: {((selectedProject.investments || []).reduce((sum: number, inv: any) => sum + inv.amount, 0)).toLocaleString()} StudyCoins
+                        </span>
+                        <span className="bg-blue-500/15 text-blue-500 border border-blue-500/30 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                          {selectedProject.investments?.length || 0} Nhà đầu tư
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -376,6 +506,63 @@ export default function ProjectShowcase() {
                     </div>
                   )}
                 </div>
+              </Card>
+
+              {/* Crowdfunding Simulator Form Card */}
+              <Card className="bg-[#181824] border-gray-800 text-white p-5 rounded-3xl">
+                <h3 className="font-black text-xs text-[#FF6B00] flex items-center gap-1.5 mb-3 uppercase tracking-wider">
+                  <Coins className="w-4 h-4 text-yellow-500" />
+                  Đầu Tư Gọi Vốn Giập Lập (Crowdfunding)
+                </h3>
+                <p className="text-[10px] text-gray-405 mb-4 leading-relaxed font-medium">
+                  Đánh giá dự án khởi nghiệp này bằng cách rót vốn StudyCoins của bạn. Dự án gọi vốn thành công nhất lớp học sẽ nhận được điểm cộng chuyên môn từ Giảng viên.
+                </p>
+
+                <form onSubmit={handleInvest} className="space-y-4">
+                  <div>
+                    <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">
+                      Nhập số StudyCoins muốn đầu tư (Số dư ví: {(user?.balance !== undefined ? user.balance : 100000).toLocaleString()} 🪙)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1000"
+                        value={investmentAmount}
+                        onChange={e => setInvestmentAmount(e.target.value)}
+                        disabled={investing}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#FF6B00] font-black text-white"
+                        placeholder="Ví dụ: 10000"
+                      />
+                      <button
+                        type="submit"
+                        disabled={investing || !investmentAmount}
+                        className="px-5 bg-[#FF6B00] hover:bg-[#E85A00] text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1 disabled:opacity-50 shrink-0"
+                      >
+                        {investing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Rót vốn đầu tư 🪙'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick select buttons */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {['1000', '5000', '10000', '25000', '50000'].map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        disabled={investing}
+                        onClick={() => setInvestmentAmount(preset)}
+                        className={`px-3 py-1.5 border rounded-lg text-[10px] font-bold transition ${
+                          investmentAmount === preset
+                            ? 'bg-[#FF6B00]/25 border-[#FF6B00] text-[#FF6B00]'
+                            : 'border-white/10 hover:border-white/20 text-gray-300'
+                        }`}
+                      >
+                        +{Number(preset).toLocaleString()} 🪙
+                      </button>
+                    ))}
+                  </div>
+                </form>
               </Card>
 
               {/* Comments / Discussion board */}

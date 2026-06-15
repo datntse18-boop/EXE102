@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import pptxgen from 'pptxgenjs'
 import { teamService, projectService, slideService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import Card from '../../components/cards/Card'
@@ -119,6 +120,84 @@ export default function SlideOutline() {
     }
   }
 
+  const handleDownloadPPTX = () => {
+    if (slides.length === 0) return
+
+    const pptx = new pptxgen()
+    pptx.title = `Pitch Deck - ${project?.name || 'Startup'}`
+    pptx.subject = 'Startup Pitch Deck Outline'
+    pptx.author = 'StudyConnect AI Slide Generator'
+
+    // Define colors
+    const bgColor = '1B1B22' // obsidian dark
+    const titleColor = 'FF6B00' // orange
+    const textColor = 'FFFFFF'
+    const footerColor = '888888'
+
+    slides.forEach(slide => {
+      const pptxSlide = pptx.addSlide()
+      pptxSlide.background = { fill: bgColor }
+
+      // Title
+      pptxSlide.addText(slide.title, {
+        x: 0.5,
+        y: 0.6,
+        w: '90%',
+        h: 0.8,
+        fontSize: 24,
+        bold: true,
+        color: titleColor,
+        fontFace: 'Arial'
+      })
+
+      // Bullets
+      const bulletsList = slide.bullets.map(b => {
+        return { text: b, options: { bullet: true, color: textColor, fontSize: 14 } }
+      })
+
+      pptxSlide.addText(bulletsList, {
+        x: 0.5,
+        y: 1.6,
+        w: '90%',
+        h: 2.8,
+        color: textColor,
+        fontFace: 'Arial'
+      })
+
+      // Visual suggestions
+      pptxSlide.addText(`Visual Suggestion: ${slide.visualSuggestion}`, {
+        x: 0.5,
+        y: 4.8,
+        w: '90%',
+        h: 0.8,
+        fontSize: 10,
+        italic: true,
+        color: footerColor,
+        fontFace: 'Arial'
+      })
+
+      // Slide number
+      pptxSlide.addText(`Slide ${slide.slideNum} / ${slides.length} - ${project?.name || 'StudyConnect'}`, {
+        x: 0.5,
+        y: 5.8,
+        w: '90%',
+        h: 0.3,
+        fontSize: 9,
+        color: footerColor,
+        align: 'right'
+      })
+    })
+
+    pptx.writeFile({ fileName: `PitchDeck_${project?.name || 'Startup'}.pptx` })
+      .then(() => {
+        alert('Tải slide PowerPoint (.pptx) thành công! 🎉')
+      })
+      .catch(err => {
+        console.error('PPTX generation error:', err)
+        alert('Không thể tạo file PowerPoint.')
+      })
+  }
+
   const handlePrint = () => {
     window.print()
   }
@@ -194,13 +273,22 @@ export default function SlideOutline() {
         </div>
 
         {slides.length > 0 && (
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 bg-gray-850 text-white rounded-xl text-xs font-bold hover:bg-gray-950 transition flex items-center gap-1.5 shadow-sm border border-gray-750"
-          >
-            <Printer className="w-4 h-4 text-orange-500" />
-            Xuất Slide Deck (PDF)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadPPTX}
+              className="px-4 py-2 bg-[#FF6B00] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#E85A00] transition flex items-center gap-1.5 shadow-sm border border-transparent"
+            >
+              <FileText className="w-4 h-4" />
+              Tải PowerPoint (.pptx)
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2 bg-gray-850 dark:bg-gray-800 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-gray-950 dark:hover:bg-gray-900 transition flex items-center gap-1.5 shadow-sm border border-gray-750 dark:border-gray-700"
+            >
+              <Printer className="w-4 h-4 text-orange-500" />
+              Xuất Slide Deck (PDF)
+            </button>
+          </div>
         )}
       </div>
 

@@ -187,6 +187,9 @@ export const getPublicProjects = async (req: AuthRequest, res: Response): Promis
         votes: {
           select: { userId: true }
         },
+        investments: {
+          select: { amount: true }
+        },
         _count: {
           select: { votes: true, comments: true }
         }

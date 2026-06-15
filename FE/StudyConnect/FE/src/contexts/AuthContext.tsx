@@ -16,6 +16,7 @@ type User = {
   commitmentHours?: number
   pastProjects?: string
   classCode?: string
+  balance?: number
 }
 
 type AuthContextValue = {

@@ -151,6 +151,23 @@ export default function MentorshipBooking() {
     }
   }
 
+  const getGoogleCalendarLink = (slot: any) => {
+    const title = encodeURIComponent(`Lịch hẹn cố vấn 1-on-1: ${slot.bookedByTeam?.name || 'StudyConnect'}`)
+    const startTimeStr = new Date(slot.startTime).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    const endTimeStr = new Date(slot.endTime).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    const dates = `${startTimeStr}/${endTimeStr}`
+    const details = encodeURIComponent(
+      `Cố vấn dự án khởi nghiệp StudyConnect.\n\n` +
+      `Giảng viên: ${slot.lecturer?.name || 'N/A'}\n` +
+      `Nhóm: ${slot.bookedByTeam?.name || 'N/A'}\n` +
+      `Chủ đề: ${slot.topic || 'N/A'}\n` +
+      `Link phòng họp: ${slot.meetingLink || 'N/A'}\n\n` +
+      `Được đồng bộ từ StudyConnect Enterprise.`
+    )
+    const location = encodeURIComponent(slot.meetingLink || 'Zoom Meeting')
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center p-20 text-gray-500">
@@ -371,6 +388,18 @@ export default function MentorshipBooking() {
                           >
                             <Video className="w-3.5 h-3.5" />
                             Link phòng trực tuyến
+                          </a>
+                        )}
+
+                        {slot.status === 'booked' && (
+                          <a 
+                            href={getGoogleCalendarLink(slot)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-[#FF6B00] font-bold hover:underline flex items-center gap-1 mt-1"
+                          >
+                            <Calendar className="w-3.5 h-3.5 text-[#FF6B00]" />
+                            Đồng bộ Google Calendar
                           </a>
                         )}
                       </div>

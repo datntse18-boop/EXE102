@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import Card from '../../components/cards/Card'
-import { teamService, projectService, taskService, chatService, okrService } from '../../services/apiServices'
+import { teamService, projectService, taskService, chatService, okrService, mentorService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   MessageSquare,
@@ -15,7 +15,9 @@ import {
   ChevronRight,
   TrendingUp,
   X,
-  PlusCircle
+  PlusCircle,
+  Sparkles,
+  Bot
 } from 'lucide-react'
 
 export default function Workspace() {
@@ -28,7 +30,7 @@ export default function Workspace() {
   const [loading, setLoading] = useState(true)
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'kanban' | 'okr'>('kanban')
+  const [activeTab, setActiveTab] = useState<'kanban' | 'okr' | 'mentor'>('kanban')
 
   // Chat Box States
   const [showChat, setShowChat] = useState(false)
@@ -36,6 +38,13 @@ export default function Workspace() {
   const [newMsg, setNewMsg] = useState('')
   const [sendingMsg, setSendingMsg] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // AI Mentor States
+  const [mentorMessages, setMentorMessages] = useState<any[]>([])
+  const [newMentorMessage, setNewMentorMessage] = useState('')
+  const [loadingMentor, setLoadingMentor] = useState(false)
+  const [sendingMentor, setSendingMentor] = useState(false)
+  const mentorEndRef = useRef<HTMLDivElement>(null)
 
   // OKR States
   const [objectives, setObjectives] = useState<any[]>([])
@@ -152,6 +161,55 @@ export default function Workspace() {
       setLoadingOKRs(false)
     }
   }
+
+  const loadMentorMessages = async () => {
+    if (!selectedProject) return
+    setLoadingMentor(true)
+    try {
+      const data = await mentorService.getMentorMessages(selectedProject.id)
+      setMentorMessages(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingMentor(false)
+    }
+  }
+
+  const handleSendMentorMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !newMentorMessage.trim()) return
+
+    const userMsgText = newMentorMessage
+    setNewMentorMessage('')
+
+    // Optimistically add user message
+    const tempUserMsg = { id: `temp-${Date.now()}`, role: 'user', message: userMsgText, createdAt: new Date().toISOString() }
+    setMentorMessages(prev => [...prev, tempUserMsg])
+    setSendingMentor(true)
+
+    try {
+      await mentorService.sendMentorMessage(selectedProject.id, userMsgText)
+      const data = await mentorService.getMentorMessages(selectedProject.id)
+      setMentorMessages(data)
+    } catch (err) {
+      console.error(err)
+      alert('Không thể gửi tin nhắn cố vấn AI.')
+    } finally {
+      setSendingMentor(false)
+    }
+  }
+
+  // Auto-scroll AI mentor chat
+  useEffect(() => {
+    mentorEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mentorMessages])
+
+  // Trigger load AI mentor when tab switches or project changes
+  useEffect(() => {
+    if (activeTab === 'mentor' && selectedProject) {
+      loadMentorMessages()
+    }
+  }, [activeTab, selectedProject])
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
     try {
@@ -402,6 +460,12 @@ export default function Workspace() {
           >
             🎯 Quản lý mục tiêu OKR
           </button>
+          <button
+            onClick={() => setActiveTab('mentor')}
+            className={`pb-3 px-6 font-black text-xs transition border-b-2 ${activeTab === 'mentor' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            🤖 Cố vấn AI 24/7
+          </button>
         </div>
 
         {/* TAB PANELS */}
@@ -456,7 +520,7 @@ export default function Workspace() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'okr' ? (
           /* OKR & KPI DASHBOARD PANEL */
           <div className="space-y-6">
             {loadingOKRs ? (
@@ -540,6 +604,146 @@ export default function Workspace() {
                 ))}
               </div>
             )}
+          </div>
+        ) : (
+          /* AI MENTOR 24/7 PANEL */
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 border border-gray-100 dark:border-gray-800/40 shadow-sm flex flex-col h-[600px]">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b dark:border-gray-800 pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-orange-500/10 dark:bg-orange-950/20 text-[#FF6B00] rounded-2xl border border-orange-100 dark:border-orange-900/20">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-800 dark:text-white text-sm flex items-center gap-1.5">
+                    Cố vấn Khởi nghiệp AI 24/7 <span className="text-[9px] bg-green-50 dark:bg-green-950/20 text-green-500 font-bold px-1.5 py-0.5 rounded border border-green-100 dark:border-green-900/20 uppercase animate-pulse">Online</span>
+                  </h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Hỗ trợ pháp lý, mô hình kinh doanh, tài chính & pitching từ Gemini AI</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={loadMentorMessages}
+                className="px-2.5 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border dark:border-gray-800 rounded-lg transition"
+              >
+                Tải lại lịch sử
+              </button>
+            </div>
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin">
+              {loadingMentor ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#FF6B00] mb-2" />
+                  Đang tải lịch sử hội thoại...
+                </div>
+              ) : mentorMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
+                  <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-3 text-orange-500 text-2xl">
+                    🤖
+                  </div>
+                  <h4 className="font-bold text-xs text-gray-800 dark:text-gray-250 mb-1">Xin chào dự án {selectedProject?.name || 'mới'}!</h4>
+                  <p className="text-[10px] max-w-sm mb-4">Tôi là Cố vấn Khởi nghiệp AI của bạn. Hãy hỏi tôi bất kỳ câu hỏi nào về xây dựng dự án startup, luật doanh nghiệp, tài chính hoặc slide pitching.</p>
+                  
+                  {/* Suggested questions */}
+                  <div className="w-full max-w-md space-y-2 mt-2">
+                    <p className="text-[9px] font-bold text-gray-500 uppercase block">Gợi ý chủ đề hỏi:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+                      {[
+                        "Làm thế nào để chia cổ phần co-founder hợp lý?",
+                        "Tư vấn mô hình kinh doanh Canvas (BMC) phù hợp.",
+                        "Làm sao viết slide pitching thuyết phục nhà đầu tư?",
+                        "Nên chọn hộ kinh doanh cá thể hay công ty TNHH?"
+                      ].map((q, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setNewMentorMessage(q)}
+                          className="p-2.5 bg-gray-550/30 dark:bg-white/5 hover:bg-orange-50 dark:hover:bg-orange-950/15 border border-gray-200 dark:border-gray-800 rounded-xl text-[10px] text-gray-600 dark:text-gray-300 hover:text-[#FF6B00] dark:hover:text-[#FF6B00] font-semibold transition text-left leading-snug"
+                        >
+                          💬 {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Explanatory banner */}
+                  <div className="p-3 bg-orange-50/20 dark:bg-orange-950/10 border border-orange-100/50 dark:border-orange-900/10 rounded-2xl text-[10px] text-[#FF6B00] font-semibold">
+                    💡 <strong>Cố vấn AI:</strong> Thông tin tư vấn chỉ mang tính chất tham khảo học thuật dựa trên syllabus môn học và kiến thức khởi nghiệp.
+                  </div>
+
+                  {mentorMessages.map((msg, idx) => {
+                    const isSelf = msg.role === 'user'
+                    return (
+                      <div key={msg.id || idx} className={`flex gap-3 ${isSelf ? 'justify-end' : 'justify-start'}`}>
+                        {!isSelf && (
+                          <div className="w-8 h-8 rounded-xl bg-orange-500/10 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/20 flex items-center justify-center text-sm font-bold text-[#FF6B00] flex-shrink-0">
+                            🤖
+                          </div>
+                        )}
+                        <div className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                          <span className="text-[8px] text-gray-400 font-bold mb-0.5">
+                            {isSelf ? user?.name : 'AI Startup Mentor'} • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <div
+                            className={`p-3 rounded-2xl text-xs leading-relaxed font-medium whitespace-pre-wrap ${
+                              isSelf
+                                ? 'bg-[#FF6B00] text-white rounded-tr-none'
+                                : 'bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-800/40'
+                            }`}
+                          >
+                            {msg.message}
+                          </div>
+                        </div>
+                        {isSelf && (
+                          <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-gray-750 dark:text-gray-300 flex-shrink-0">
+                            👤
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {sendingMentor && (
+                    <div className="flex gap-3 justify-start">
+                      <div className="w-8 h-8 rounded-xl bg-orange-500/10 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/20 flex items-center justify-center text-sm font-bold text-[#FF6B00] flex-shrink-0 animate-pulse">
+                        🤖
+                      </div>
+                      <div className="flex flex-col items-start max-w-[80%]">
+                        <span className="text-[8px] text-gray-400 font-bold mb-0.5">AI Startup Mentor đang suy nghĩ...</span>
+                        <div className="bg-gray-100 dark:bg-white/10 text-gray-500 p-3 rounded-2xl rounded-tl-none text-xs flex items-center gap-1.5 border border-gray-200 dark:border-gray-800/40">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FF6B00]" />
+                          Đang phân tích và soạn thảo câu trả lời chuyên môn...
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={mentorEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSendMentorMessage} className="border-t border-gray-200 dark:border-gray-800/60 pt-3 bg-transparent flex gap-2">
+              <input
+                type="text"
+                value={newMentorMessage}
+                onChange={e => setNewMentorMessage(e.target.value)}
+                placeholder={selectedProject ? "Nhập câu hỏi khởi nghiệp (ví dụ: tư vấn mô hình kinh doanh, tài chính, luật...)" : "Vui lòng chọn hoặc tạo dự án để bắt đầu hỏi cố vấn..."}
+                disabled={!selectedProject || sendingMentor || loadingMentor}
+                className="w-full text-xs bg-gray-50 dark:bg-[#181824] border dark:border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-[#FF6B00] disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!selectedProject || !newMentorMessage.trim() || sendingMentor || loadingMentor}
+                className="px-4 bg-[#FF6B00] text-white rounded-xl hover:bg-[#E85A00] transition disabled:opacity-50 flex items-center justify-center flex-shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         )}
 
