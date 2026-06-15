@@ -104,10 +104,7 @@ export default function Sidebar() {
           label: 'Ý tưởng & Kết nối',
           icon: <Lightbulb size={14} />,
           items: [
-            { to: '/idea-generator', label: 'Ý tưởng AI', icon: <Lightbulb size={14} /> },
-            { to: '/team-matching', label: 'Ghép nhóm AI', icon: <Users size={14} /> },
-            { to: '/opportunities', label: 'Cơ hội dự án', icon: <Search size={14} /> },
-            { to: '/syllabus', label: 'Đề cương môn học', icon: <BookOpen size={14} /> }
+            { to: '/ideation-hub', label: 'Kết nối & Ý tưởng', icon: <Lightbulb size={14} /> }
           ]
         },
         {
@@ -116,12 +113,7 @@ export default function Sidebar() {
           icon: <FolderKanban size={14} />,
           items: [
             { to: '/workspace', label: 'Bảng Kanban', icon: <ClipboardList size={14} /> },
-            { to: '/canvas-generator', label: 'Mô hình Canvas AI', icon: <FolderKanban size={14} /> },
-            { to: '/customer-validation', label: 'Khảo sát khách hàng', icon: <Users size={14} /> },
-            { to: '/financial-hub', label: 'Kế hoạch tài chính', icon: <TrendingUp size={14} /> },
-            { to: '/slide-outline', label: 'Dàn ý Slide AI', icon: <FileText size={14} /> },
-            { to: '/weekly-checkin', label: 'Báo cáo tuần', icon: <CalendarDays size={14} /> },
-            { to: '/analytics', label: 'Phân tích dự án', icon: <FilePieChart size={14} /> },
+            { to: '/startup-tools', label: 'Bộ công cụ Startup', icon: <FolderKanban size={14} /> },
             ...(isTeamLeader ? [{ to: '/team-management', label: 'Quản lý thành viên', icon: <Settings size={14} /> }] : [])
           ]
         },
@@ -131,9 +123,7 @@ export default function Sidebar() {
           icon: <GraduationCap size={14} />,
           items: [
             { to: '/mentorship-booking', label: 'Đặt lịch cố vấn', icon: <Clock3 size={14} /> },
-            { to: '/peer-evaluation', label: 'Đánh giá đồng đội', icon: <Award size={14} /> },
-            { to: '/pitch-deck-advisor', label: 'Cố vấn Pitch Deck AI', icon: <Sparkles size={14} /> },
-            { to: '/gradebook', label: 'Sổ điểm của nhóm', icon: <FileSpreadsheet size={14} /> }
+            { to: '/evaluation-hub', label: 'Đánh giá & Sổ điểm', icon: <GraduationCap size={14} /> }
           ]
         },
         {
@@ -141,8 +131,7 @@ export default function Sidebar() {
           label: 'Cộng đồng',
           icon: <MessagesSquare size={14} />,
           items: [
-            { to: '/job-board', label: 'Bảng tuyển dụng', icon: <Briefcase size={14} /> },
-            { to: '/project-showcase', label: 'Trưng bày dự án', icon: <Eye size={14} /> }
+            { to: '/community-hub', label: 'Mạng lưới cộng đồng', icon: <MessagesSquare size={14} /> }
           ]
         }
       ]

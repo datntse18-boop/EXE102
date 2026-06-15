@@ -30,6 +30,10 @@ import JobBoard from '../pages/member/JobBoard'
 import CustomerValidation from '../pages/member/CustomerValidation'
 import FinancialHub from '../pages/member/FinancialHub'
 import SlideOutline from '../pages/member/SlideOutline'
+import IdeationHub from '../pages/hubs/IdeationHub'
+import StartupToolsHub from '../pages/hubs/StartupToolsHub'
+import EvaluationHub from '../pages/hubs/EvaluationHub'
+import CommunityHub from '../pages/hubs/CommunityHub'
 
 // Leader
 import TeamManagement from '../pages/leader/TeamManagement'
@@ -88,6 +92,10 @@ export default function AppRoutes() {
           element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><Dashboard /></ProtectedRoute>}
         />
         <Route path="profile" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Profile /></ProtectedRoute>} />
+        <Route path="ideation-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><IdeationHub /></ProtectedRoute>} />
+        <Route path="startup-tools" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupToolsHub /></ProtectedRoute>} />
+        <Route path="evaluation-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><EvaluationHub /></ProtectedRoute>} />
+        <Route path="community-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CommunityHub /></ProtectedRoute>} />
         <Route path="canvas-generator" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CanvasGenerator /></ProtectedRoute>} />
         <Route path="weekly-checkin" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><WeeklyCheckin /></ProtectedRoute>} />
         <Route path="mentorship-booking" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><MentorshipBooking /></ProtectedRoute>} />
