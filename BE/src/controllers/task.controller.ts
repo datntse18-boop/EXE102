@@ -2,6 +2,35 @@ import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 
+// Cập nhật điểm sức khỏe của nhóm liên quan đến dự án
+const updateTeamHealth = async (projectId: string): Promise<void> => {
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { teamId: true }
+    })
+    if (!project) return
+    const teamId = project.teamId
+    const projects = await prisma.project.findMany({ where: { teamId } })
+    const allTasks = await prisma.task.findMany({ where: { projectId: { in: projects.map(p => p.id) } } })
+    
+    let score = 80
+    if (allTasks.length > 0) {
+      const completed = allTasks.filter(t => t.status === 'completed').length
+      const overdue = allTasks.filter(t => t.dueDate && t.dueDate < new Date() && t.status !== 'completed').length
+      score = Math.max(0, Math.round((completed / allTasks.length) * 100) - overdue * 5)
+      score = Math.min(100, score)
+    }
+    
+    await prisma.team.update({
+      where: { id: teamId },
+      data: { healthScore: score }
+    })
+  } catch (err) {
+    console.error('Error updating team health score:', err)
+  }
+}
+
 // GET /api/tasks?projectId=xxx&assignedTo=xxx
 export const getTasks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -63,6 +92,7 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
       },
       include: { assignee: { select: { id: true, name: true, avatar: true } } },
     })
+    await updateTeamHealth(projectId)
     res.status(201).json({ success: true, data: task })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
@@ -79,6 +109,7 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
       data: { title, description, status, priority, assignedTo, dueDate: dueDate ? new Date(dueDate) : undefined },
       include: { assignee: { select: { id: true, name: true, avatar: true } } },
     })
+    await updateTeamHealth(task.projectId)
     res.json({ success: true, data: task })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
@@ -89,7 +120,13 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
 export const deleteTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params as { id: string }
+    const task = await prisma.task.findUnique({ where: { id }, select: { projectId: true } })
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' })
+      return
+    }
     await prisma.task.delete({ where: { id } })
+    await updateTeamHealth(task.projectId)
     res.json({ success: true, message: 'Task deleted' })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
