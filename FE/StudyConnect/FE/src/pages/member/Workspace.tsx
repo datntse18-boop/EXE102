@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Card from '../../components/cards/Card'
 import { teamService, projectService, taskService, chatService, okrService, mentorService } from '../../services/apiServices'
+import AiConfigModal from '../../components/common/AiConfigModal'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   MessageSquare,
@@ -31,6 +32,9 @@ export default function Workspace() {
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'kanban' | 'okr' | 'mentor'>('kanban')
+
+  // AI Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
 
   // Chat Box States
   const [showChat, setShowChat] = useState(false)
@@ -621,13 +625,22 @@ export default function Workspace() {
                   <p className="text-[10px] text-gray-400 font-medium">Hỗ trợ pháp lý, mô hình kinh doanh, tài chính & pitching từ Gemini AI</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={loadMentorMessages}
-                className="px-2.5 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border dark:border-gray-800 rounded-lg transition"
-              >
-                Tải lại lịch sử
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAiModalOpen(true)}
+                  className="px-2.5 py-1 text-[10px] font-bold text-orange-400 hover:text-orange-350 border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 rounded-lg transition"
+                >
+                  ⚙️ Cấu hình AI
+                </button>
+                <button
+                  type="button"
+                  onClick={loadMentorMessages}
+                  className="px-2.5 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border dark:border-gray-800 rounded-lg transition"
+                >
+                  Tải lại lịch sử
+                </button>
+              </div>
             </div>
 
             {/* Chat Area */}
@@ -978,7 +991,7 @@ export default function Workspace() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Độ ưu tiên</label>
+                  <label className="text-[10px] font-bold text-gray-550 uppercase tracking-wider block mb-1">Độ ưu tiên</label>
                   <select
                     value={newPriority}
                     onChange={e => setNewPriority(e.target.value)}
@@ -991,7 +1004,7 @@ export default function Workspace() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Hạn hoàn thành</label>
+                  <label className="text-[10px] font-bold text-gray-550 uppercase tracking-wider block mb-1">Hạn hoàn thành</label>
                   <input
                     type="date"
                     value={newDueDate}
@@ -1021,6 +1034,7 @@ export default function Workspace() {
         </div>
       )}
 
+      <AiConfigModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
     </div>
   )
 }

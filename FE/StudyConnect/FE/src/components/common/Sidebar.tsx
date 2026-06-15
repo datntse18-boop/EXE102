@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { teamService } from '../../services/apiServices'
+import AiConfigModal from './AiConfigModal'
 
 interface SidebarItem {
   to: string
@@ -51,6 +52,7 @@ export default function Sidebar() {
   const { role, logout, user } = useAuth()
   const [isOpen, setIsOpen] = useState(true)
   const [isTeamLeader, setIsTeamLeader] = useState(false)
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     overview: true,
     ideation: true,
@@ -354,6 +356,13 @@ export default function Sidebar() {
         {/* Logout Button */}
         <div className="p-4 border-t border-[#161622]">
           <button 
+            onClick={() => setIsAiModalOpen(true)} 
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 border border-orange-500/15 transition duration-300 shadow-sm mb-2.5"
+          >
+            <Sparkles size={14} />
+            Cấu hình Gemini AI
+          </button>
+          <button 
             onClick={logout} 
             className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/15 transition duration-300 shadow-sm"
           >
@@ -361,6 +370,7 @@ export default function Sidebar() {
             Đăng xuất tài khoản
           </button>
         </div>
+        <AiConfigModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
       </aside>
     </>
   )

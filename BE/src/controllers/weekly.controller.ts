@@ -1,10 +1,7 @@
 import { Response } from 'express'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+import { getGeminiModel } from '../utils/gemini'
 
 // POST /api/weekly/submit
 export const submitReport = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -26,6 +23,7 @@ Hãy tóm tắt và cho lời khuyên ngắn gọn (khoảng 3-4 câu) bằng ti
 
     let aiSummary = 'AI chưa phân tích được báo cáo này.'
     try {
+      const model = getGeminiModel(req)
       const result = await model.generateContent(prompt)
       aiSummary = result.response.text().trim()
 

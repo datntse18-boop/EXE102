@@ -1,10 +1,7 @@
 import { Response } from 'express'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+import { getGeminiModel } from '../utils/gemini'
 
 // GET /api/chat/projects/:projectId/mentor
 export const getMentorMessages = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -77,6 +74,7 @@ Hãy phản hồi tin nhắn cuối cùng của Sinh viên: "${message}"`
 
     let aiReply = 'Tôi đang gặp lỗi kết nối với máy chủ AI. Vui lòng thử lại sau.'
     try {
+      const model = getGeminiModel(req)
       const result = await model.generateContent(systemPrompt)
       aiReply = result.response.text().trim()
       

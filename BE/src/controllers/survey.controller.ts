@@ -1,10 +1,7 @@
 import { Response } from 'express'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+import { getGeminiModel } from '../utils/gemini'
 
 // POST /api/projects/:projectId/surveys
 export const addSurvey = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -99,6 +96,7 @@ Lưu ý:
 - "willingToPayRate" là tỉ lệ % số người sẵn sàng chi trả (willPayRate >= 3). Điền số nguyên từ 0-100.
 - "fitScore" là Điểm đánh giá mức độ Problem-Solution Fit (0-100).`
 
+    const model = getGeminiModel(req)
     const result = await model.generateContent(prompt)
     const text = result.response.text()
     const jsonMatch = text.match(/\{[\s\S]*\}/)

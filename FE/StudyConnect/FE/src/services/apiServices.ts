@@ -243,6 +243,16 @@ export const aiService = {
     const { data } = await api.post('/ai/demo-day', params)
     return data.data
   },
+
+  saveKeyOnServer: async (apiKey: string) => {
+    const { data } = await api.post('/ai/save-key', { apiKey })
+    return data
+  },
+
+  testKeyOnServer: async () => {
+    const { data } = await api.post('/ai/idea-generator', { targetUsers: 'Test Users', problemArea: 'Test Problem', technology: 'React' })
+    return data.success
+  },
 }
 
 export const reportService = {

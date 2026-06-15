@@ -7,11 +7,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach JWT token to every request
+// Attach JWT token and Gemini API key to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const geminiKey = localStorage.getItem('gemini_api_key')
+  if (geminiKey) {
+    config.headers['x-gemini-key'] = geminiKey
   }
   return config
 })
