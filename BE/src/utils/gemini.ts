@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { Request } from 'express'
 
-export const getGeminiModel = (req?: Request, modelName: string = 'gemini-2.0-flash') => {
+export const getGeminiModel = (req?: Request, modelName: string = 'gemini-2.5-flash') => {
   let apiKey = process.env.GEMINI_API_KEY
 
   if (req && req.headers) {
