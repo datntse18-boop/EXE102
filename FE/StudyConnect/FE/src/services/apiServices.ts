@@ -284,6 +284,16 @@ export const mentoringService = {
     const { data } = await api.post(`/mentoring/slots/${id}/book`, booking)
     return data.data
   },
+
+  updateMeetingMinutes: async (id: string, meetingMinutes: string) => {
+    const { data } = await api.put(`/mentoring/slots/${id}/minutes`, { meetingMinutes })
+    return data.data
+  },
+
+  coSignMeetingMinutes: async (id: string) => {
+    const { data } = await api.post(`/mentoring/slots/${id}/co-sign`)
+    return data.data
+  },
 }
 
 export const evaluationService = {
@@ -397,3 +407,40 @@ export const okrService = {
     return data.data
   },
 }
+
+export const surveyService = {
+  addSurvey: async (projectId: string, survey: { respondentName?: string; feedbackText: string; willPayRate: number; demographics?: string }) => {
+    const { data } = await api.post(`/surveys/${projectId}`, survey)
+    return data.data
+  },
+
+  getSurveys: async (projectId: string) => {
+    const { data } = await api.get(`/surveys/${projectId}`)
+    return data.data
+  },
+
+  analyzeSurveys: async (projectId: string) => {
+    const { data } = await api.post(`/surveys/${projectId}/analyze`)
+    return data.data
+  },
+}
+
+export const financialService = {
+  getFinancialModel: async (projectId: string) => {
+    const { data } = await api.get(`/financial/${projectId}`)
+    return data.data
+  },
+
+  saveFinancialModel: async (projectId: string, financialData: { fixedCosts: number; variableCosts: number; sellingPrice: number; projectedSales: number; cac: number; ltv: number; triggerAI?: boolean }) => {
+    const { data } = await api.put(`/financial/${projectId}`, financialData)
+    return data.data
+  },
+}
+
+export const slideService = {
+  generateSlides: async (projectId: string) => {
+    const { data } = await api.post(`/ai/projects/${projectId}/generate-slides`)
+    return data.data
+  },
+}
+

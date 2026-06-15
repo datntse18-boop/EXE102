@@ -27,7 +27,8 @@ import {
   Layers,
   CreditCard,
   TrendingUp,
-  Inbox
+  Inbox,
+  FileText
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { teamService } from '../../services/apiServices'
@@ -114,6 +115,9 @@ export default function Sidebar() {
           items: [
             { to: '/workspace', label: 'Bảng Kanban', icon: <ClipboardList size={14} /> },
             { to: '/canvas-generator', label: 'Mô hình Canvas AI', icon: <FolderKanban size={14} /> },
+            { to: '/customer-validation', label: 'Khảo sát khách hàng', icon: <Users size={14} /> },
+            { to: '/financial-hub', label: 'Kế hoạch tài chính', icon: <TrendingUp size={14} /> },
+            { to: '/slide-outline', label: 'Dàn ý Slide AI', icon: <FileText size={14} /> },
             { to: '/weekly-checkin', label: 'Báo cáo tuần', icon: <CalendarDays size={14} /> },
             { to: '/analytics', label: 'Phân tích dự án', icon: <FilePieChart size={14} /> },
             ...(isTeamLeader ? [{ to: '/team-management', label: 'Quản lý thành viên', icon: <Settings size={14} /> }] : [])

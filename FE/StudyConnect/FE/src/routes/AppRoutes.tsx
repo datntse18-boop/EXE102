@@ -27,6 +27,9 @@ import PeerEvaluation from '../pages/member/PeerEvaluation'
 import PitchDeckAdvisor from '../pages/member/PitchDeckAdvisor'
 import Gradebook from '../pages/manager/Gradebook'
 import JobBoard from '../pages/member/JobBoard'
+import CustomerValidation from '../pages/member/CustomerValidation'
+import FinancialHub from '../pages/member/FinancialHub'
+import SlideOutline from '../pages/member/SlideOutline'
 
 // Leader
 import TeamManagement from '../pages/leader/TeamManagement'
@@ -99,6 +102,9 @@ export default function AppRoutes() {
         <Route path="workspace" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Workspace /></ProtectedRoute>} />
         <Route path="analytics" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Analytics /></ProtectedRoute>} />
         <Route path="syllabus" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Syllabus /></ProtectedRoute>} />
+        <Route path="customer-validation" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CustomerValidation /></ProtectedRoute>} />
+        <Route path="financial-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><FinancialHub /></ProtectedRoute>} />
+        <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><SlideOutline /></ProtectedRoute>} />
 
         <Route path="team-management" element={<ProtectedRoute allowed={['leader','manager','admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>

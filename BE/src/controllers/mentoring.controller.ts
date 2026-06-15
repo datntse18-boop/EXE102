@@ -132,3 +132,81 @@ export const bookSlot = async (req: AuthRequest, res: Response): Promise<void> =
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// PUT /api/mentoring/slots/:id/minutes - Lecturer updates meeting minutes
+export const updateMeetingMinutes = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params as { id: string }
+    const { meetingMinutes } = req.body
+
+    if (req.user!.role !== 'manager' && req.user!.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Only lecturers and admins can update meeting minutes' })
+      return
+    }
+
+    const slot = await prisma.mentoringSlot.findUnique({ where: { id } })
+    if (!slot) {
+      res.status(404).json({ success: false, message: 'Slot not found' })
+      return
+    }
+
+    const updated = await prisma.mentoringSlot.update({
+      where: { id },
+      data: {
+        meetingMinutes,
+        isSigned: false // Reset sign status when minutes are updated
+      }
+    })
+
+    res.json({ success: true, data: updated })
+  } catch (err) {
+    console.error('Update Minutes Error:', err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
+// POST /api/mentoring/slots/:id/co-sign - Student co-signs meeting minutes
+export const coSignMeetingMinutes = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params as { id: string }
+
+    const slot = await prisma.mentoringSlot.findUnique({ where: { id } })
+    if (!slot) {
+      res.status(404).json({ success: false, message: 'Slot not found' })
+      return
+    }
+
+    if (!slot.bookedByTeamId) {
+      res.status(400).json({ success: false, message: 'This slot is not booked' })
+      return
+    }
+
+    // Verify student belongs to the team
+    const isMember = await prisma.teamMember.findUnique({
+      where: {
+        teamId_userId: {
+          teamId: slot.bookedByTeamId,
+          userId: req.user!.id
+        }
+      }
+    })
+
+    if (!isMember && req.user!.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Only team members can co-sign meeting minutes' })
+      return
+    }
+
+    const updated = await prisma.mentoringSlot.update({
+      where: { id },
+      data: {
+        isSigned: true
+      }
+    })
+
+    res.json({ success: true, data: updated })
+  } catch (err) {
+    console.error('Co-sign Minutes Error:', err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+

@@ -155,6 +155,7 @@ model Project {
   pitchVideoUrl String?
   canvasModel   String?     // JSON string representing 9 boxes of Business Model Canvas
   isPublic      Boolean     @default(false)
+  slideOutline  String?     // JSON string representing slide outline
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -163,6 +164,8 @@ model Project {
   votes ProjectVote[]
   comments ProjectComment[]
   objectives ProjectObjective[]
+  surveys    CustomerSurvey[]
+  financialModel FinancialModel?
 
   @@map("projects")
 }
@@ -248,6 +251,8 @@ model MentoringSlot {
   bookedByTeam   Team?    @relation(fields: [bookedByTeamId], references: [id], onDelete: SetNull)
   topic          String?
   meetingLink    String?
+  meetingMinutes String?
+  isSigned       Boolean  @default(false)
   createdAt      DateTime @default(now())
 
   @@map("mentoring_slots")
@@ -280,6 +285,7 @@ model TeamGrade {
   milestone   Int
   score       Float
   feedback    String?
+  rubricScores String?  // JSON string representing rubric scores
   gradedById  String
   gradedBy    User     @relation("GradedBy", fields: [gradedById], references: [id])
   createdAt   DateTime @default(now())
@@ -387,3 +393,33 @@ model ProjectKeyResult {
 
   @@map("project_key_results")
 }
+
+model CustomerSurvey {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  respondentName String?
+  feedbackText  String
+  willPayRate   Int      @default(0)
+  demographics  String?
+  createdAt     DateTime @default(now())
+
+  @@map("customer_surveys")
+}
+
+model FinancialModel {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fixedCosts    Float    @default(0)
+  variableCosts Float    @default(0)
+  sellingPrice  Float    @default(0)
+  projectedSales Int     @default(0)
+  cac           Float    @default(0)
+  ltv           Float    @default(0)
+  aiReview      String?
+  updatedAt     DateTime @updatedAt
+
+  @@map("financial_models")
+}
+

@@ -18,6 +18,8 @@ import jobRoutes from './routes/job.routes'
 import notificationRoutes from './routes/notification.routes'
 import chatRoutes from './routes/chat.routes'
 import okrRoutes from './routes/okr.routes'
+import surveyRoutes from './routes/survey.routes'
+import financialRoutes from './routes/financial.routes'
 
 dotenv.config()
 
@@ -55,6 +57,8 @@ app.use('/api/jobs', jobRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/okr', okrRoutes)
+app.use('/api/surveys', surveyRoutes)
+app.use('/api/financial', financialRoutes)
 
 // 404 handler
 app.use((req, res) => {

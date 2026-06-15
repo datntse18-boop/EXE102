@@ -360,3 +360,81 @@ Lưu ý:
   }
 }
 
+// POST /api/ai/projects/:projectId/generate-slides
+export const generateSlides = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params as { projectId: string }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    })
+
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' })
+      return
+    }
+
+    const canvasText = project.canvasModel || 'Chưa thiết lập mô hình Canvas'
+    const descText = project.description || 'Chưa thiết lập mô tả dự án'
+
+    const prompt = `Bạn là chuyên gia tư vấn khởi nghiệp và thiết kế Pitch Deck của StudyConnect.
+Hãy phân tích thông tin dự án và mô hình Business Model Canvas sau đây để tạo một dàn ý Slide thuyết trình (Pitch Deck) 10 trang chuẩn gọi vốn quốc tế:
+- Tên dự án: ${project.name}
+- Mô tả dự án: ${descText}
+- Chi tiết mô hình Canvas: ${canvasText}
+
+Nhiệm vụ:
+Hãy thiết lập dàn ý chi tiết gồm đúng 10 slide. Trả về chính xác định dạng JSON (chỉ JSON, không markdown \`\`\`json, không giải thích gì ngoài JSON):
+{
+  "slides": [
+    {
+      "slideNum": 1,
+      "title": "Tiêu đề slide (ví dụ: Trang bìa / Giới thiệu)",
+      "bullets": [
+        "Ý chính thuyết trình 1...",
+        "Ý chính thuyết trình 2..."
+      ],
+      "visualSuggestion": "Gợi ý hình ảnh/đồ họa hiển thị trên slide..."
+    }
+  ]
+}
+
+Lưu ý:
+- 10 slide phải đi qua các phần:
+  1. Title / Intro (Trang bìa)
+  2. Problem (Vấn đề)
+  3. Solution (Giải pháp)
+  4. Market Size / TAM-SAM-SOM (Thị trường)
+  5. Product / MVP (Sản phẩm)
+  6. Business Model / Revenue (Mô hình doanh thu)
+  7. Go-To-Market / Marketing (Chiến lược tiếp cận)
+  8. Competitors / Competitive Advantage (Đối thủ & Lợi thế cạnh tranh)
+  9. Team (Đội ngũ)
+  10. Call to Action / Ask (Kêu gọi hành động / Vốn)
+- Cung cấp dữ liệu chi tiết, thực tế, liên kết chặt chẽ với dự án.`
+
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      res.status(500).json({ success: false, message: 'AI response parsing error' })
+      return
+    }
+    const slidesData = JSON.parse(jsonMatch[0])
+
+    // Update project
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        slideOutline: JSON.stringify(slidesData)
+      }
+    })
+
+    res.json({ success: true, data: slidesData })
+  } catch (err) {
+    console.error('Generate Slides Error:', err)
+    res.status(500).json({ success: false, message: 'AI generation failed' })
+  }
+}
+
+

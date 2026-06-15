@@ -6,7 +6,7 @@ import { createNotification } from './notification.controller'
 // POST /api/grades/submit
 export const gradeTeam = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { teamId, milestone, score, feedback } = req.body
+    const { teamId, milestone, score, feedback, rubricScores } = req.body
     const lecturerId = req.user!.id
 
     // Check permissions
@@ -19,6 +19,8 @@ export const gradeTeam = async (req: AuthRequest, res: Response): Promise<void> 
       res.status(400).json({ success: false, message: 'teamId, milestone, and score are required' })
       return
     }
+
+    const rubricScoresStr = rubricScores ? (typeof rubricScores === 'string' ? rubricScores : JSON.stringify(rubricScores)) : null
 
     // Upsert team grade
     const existing = await prisma.teamGrade.findFirst({
@@ -35,6 +37,7 @@ export const gradeTeam = async (req: AuthRequest, res: Response): Promise<void> 
         data: {
           score: Number(score),
           feedback,
+          rubricScores: rubricScoresStr,
           gradedById: lecturerId
         }
       })
@@ -45,6 +48,7 @@ export const gradeTeam = async (req: AuthRequest, res: Response): Promise<void> 
           milestone: Number(milestone),
           score: Number(score),
           feedback,
+          rubricScores: rubricScoresStr,
           gradedById: lecturerId
         }
       })
