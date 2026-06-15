@@ -91,9 +91,23 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, avatar, classCode, skills, desiredRole, commitmentHours, pastProjects } = req.body
+    
+    // Normalize classCode if provided
+    const normalizedClassCode = classCode !== undefined 
+      ? (classCode ? String(classCode).trim().toUpperCase() : null) 
+      : undefined
+
     const user = await prisma.user.update({
       where: { id: req.user!.id },
-      data: { name, avatar, classCode, skills, desiredRole, commitmentHours, pastProjects },
+      data: { 
+        name, 
+        avatar, 
+        classCode: normalizedClassCode, 
+        skills, 
+        desiredRole, 
+        commitmentHours: commitmentHours !== undefined ? Number(commitmentHours) : undefined, 
+        pastProjects 
+      },
       select: { id: true, name: true, email: true, role: true, avatar: true, status: true, subscription: true, classCode: true, skills: true, desiredRole: true, commitmentHours: true, pastProjects: true },
     })
     res.json({ success: true, data: user })

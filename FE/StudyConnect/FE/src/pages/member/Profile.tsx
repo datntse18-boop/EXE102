@@ -12,6 +12,7 @@ export default function Profile() {
   const [desiredRole, setDesiredRole] = useState(user?.desiredRole || '')
   const [commitmentHours, setCommitmentHours] = useState<number>(user?.commitmentHours || 10)
   const [pastProjects, setPastProjects] = useState(user?.pastProjects || '')
+  const [classCode, setClassCode] = useState(user?.classCode || '')
   
   const [updating, setUpdating] = useState(false)
 
@@ -25,7 +26,8 @@ export default function Profile() {
         skills,
         desiredRole,
         commitmentHours: Number(commitmentHours),
-        pastProjects
+        pastProjects,
+        classCode
       })
       
       // Update local AuthContext user state
@@ -180,7 +182,7 @@ export default function Profile() {
 
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    Mã Lớp Học (Giảng viên cung cấp)
+                    {role === 'manager' ? 'Mã Lớp Học Của Bạn (Để sinh viên kết nối)' : 'Mã Lớp Học (Giảng viên cung cấp)'}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-3 text-gray-400">
@@ -188,9 +190,15 @@ export default function Profile() {
                     </span>
                     <input
                       type="text"
-                      disabled
-                      value={user?.classCode || 'Chưa tham gia lớp nào'}
-                      className="w-full border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-xs bg-gray-50 text-gray-400 cursor-not-allowed"
+                      disabled={role !== 'manager'}
+                      value={classCode}
+                      onChange={e => setClassCode(e.target.value.toUpperCase())}
+                      placeholder={role === 'manager' ? "Ví dụ: EXE101_CLASS_A" : "Chưa tham gia lớp nào"}
+                      className={`w-full border rounded-xl pl-10 pr-4 py-2.5 text-xs ${
+                        role === 'manager' 
+                          ? 'border-gray-200 focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-700 dark:text-gray-300' 
+                          : 'border-gray-150 bg-gray-50 dark:bg-gray-950/40 text-gray-400 cursor-not-allowed'
+                      }`}
                     />
                   </div>
                 </div>

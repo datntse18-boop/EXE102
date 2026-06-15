@@ -223,9 +223,11 @@ export const joinClass = async (req: AuthRequest, res: Response): Promise<void> 
       return
     }
 
+    const normalizedCode = String(classCode).trim().toUpperCase()
+
     // Check if lecturer exists with this classCode
     const lecturer = await prisma.user.findFirst({
-      where: { role: 'manager', classCode },
+      where: { role: 'manager', classCode: normalizedCode },
     })
     if (!lecturer) {
       res.status(404).json({ success: false, message: 'Không tìm thấy giảng viên với mã lớp này' })
@@ -241,7 +243,15 @@ export const joinClass = async (req: AuthRequest, res: Response): Promise<void> 
     // Update team with the classCode
     const updated = await prisma.team.update({
       where: { id },
-      data: { classCode },
+      data: { classCode: normalizedCode },
+      include: { members: true }
+    })
+
+    // Propagate classCode to all team members
+    const memberIds = updated.members.map(m => m.userId)
+    await prisma.user.updateMany({
+      where: { id: { in: memberIds } },
+      data: { classCode: normalizedCode }
     })
 
     res.json({ success: true, message: 'Tham gia lớp học thành công', data: updated })

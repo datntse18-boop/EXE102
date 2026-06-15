@@ -101,6 +101,15 @@ export const respondToInvitation = async (req: AuthRequest, res: Response): Prom
       })
       if (!existing) {
         await prisma.teamMember.create({ data: { teamId: invitation.teamId, userId: req.user!.id } })
+        
+        // Also inherit the team's classCode if any
+        const team = await prisma.team.findUnique({ where: { id: invitation.teamId } })
+        if (team?.classCode) {
+          await prisma.user.update({
+            where: { id: req.user!.id },
+            data: { classCode: team.classCode }
+          })
+        }
       }
     }
 

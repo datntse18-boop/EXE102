@@ -22,11 +22,10 @@ export default function WeeklyCheckin() {
   const loadData = async () => {
     setLoading(true)
     try {
-      if (role === 'member') {
+      if (role === 'member' || role === 'manager') {
         const teamsData = await teamService.getTeams()
-        // Only led teams can submit weekly report, but all members can see
         setTeams(teamsData)
-        if (teamsData.length > 0) {
+        if (role === 'member' && teamsData.length > 0) {
           setSelectedTeamId(teamsData[0].id)
         }
       }

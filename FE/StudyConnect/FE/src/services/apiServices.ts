@@ -45,7 +45,7 @@ export const userService = {
     return data.data
   },
 
-  updateProfile: async (profile: { name?: string; avatar?: string; skills?: string; desiredRole?: string; commitmentHours?: number; pastProjects?: string }) => {
+  updateProfile: async (profile: { name?: string; avatar?: string; skills?: string; desiredRole?: string; commitmentHours?: number; pastProjects?: string; classCode?: string }) => {
     const { data } = await api.patch('/users/profile', profile)
     return data.data
   },

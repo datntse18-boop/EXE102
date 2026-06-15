@@ -39,16 +39,18 @@ export default function Gradebook() {
         const data = await gradeService.getClassGrades({ classCode })
         setTeams(data)
 
-        // Load weekly reports for each team
+        // Load weekly reports for each team concurrently
         const reportsMap: Record<string, number[]> = {}
-        for (const t of data) {
-          try {
-            const reports = await weeklyReportService.getWeeklyReports({ teamId: t.id })
-            reportsMap[t.id] = reports.map((r: any) => r.weekNumber)
-          } catch (e) {
-            console.error('Error loading reports for team:', t.id, e)
-          }
-        }
+        await Promise.all(
+          data.map(async (t: any) => {
+            try {
+              const reports = await weeklyReportService.getWeeklyReports({ teamId: t.id })
+              reportsMap[t.id] = reports.map((r: any) => r.weekNumber)
+            } catch (e) {
+              console.error('Error loading reports for team:', t.id, e)
+            }
+          })
+        )
         setWeeklyReports(reportsMap)
       } else {
         // Find user's team

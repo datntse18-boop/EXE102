@@ -588,8 +588,8 @@ export default function Dashboard() {
                           type="text"
                           placeholder="Mã lớp học..."
                           value={joinClassCode[team.id] || ''}
-                          onChange={e => setJoinClassCode({ ...joinClassCode, [team.id]: e.target.value })}
-                          className="border border-orange-100/80 rounded-xl px-2.5 py-1 text-[10px] bg-white focus:outline-none focus:border-[#FF6B00] w-full sm:w-28 font-medium"
+                          onChange={e => setJoinClassCode({ ...joinClassCode, [team.id]: e.target.value.toUpperCase() })}
+                          className="border border-orange-100/80 rounded-xl px-2.5 py-1 text-[10px] bg-white dark:bg-[#13131C] text-gray-700 dark:text-gray-300 focus:outline-none focus:border-[#FF6B00] w-full sm:w-28 font-medium"
                         />
                         <button
                           onClick={() => handleJoinClass(team.id)}
