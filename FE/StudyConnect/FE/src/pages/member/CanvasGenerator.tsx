@@ -38,16 +38,14 @@ export default function CanvasGenerator() {
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Fetch teams led by user
+  // Fetch all teams the user belongs to
   useEffect(() => {
     const fetchTeams = async () => {
       try {
         const data = await teamService.getTeams()
-        // Filter teams where user is leader (creator)
-        const led = data.filter((t: any) => t.leaderId === user?.id)
-        setTeams(led)
-        if (led.length > 0) {
-          setSelectedTeamId(led[0].id)
+        setTeams(data)
+        if (data.length > 0) {
+          setSelectedTeamId(data[0].id)
         }
       } catch (err) {
         console.error(err)
@@ -55,6 +53,9 @@ export default function CanvasGenerator() {
     }
     fetchTeams()
   }, [user])
+
+  const selectedTeam = teams.find(t => t.id === selectedTeamId)
+  const isLeader = selectedTeam?.leaderId === user?.id
 
   // Fetch project for selected team
   useEffect(() => {
@@ -169,17 +170,23 @@ export default function CanvasGenerator() {
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))
             ) : (
-              <option value="">(Bạn chưa làm trưởng nhóm nào)</option>
+              <option value="">(Bạn chưa tham gia nhóm nào)</option>
             )}
           </select>
         </div>
 
         {project && (
           <div className="flex items-center gap-2">
+            {!isLeader && (
+              <span className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                👁️ Chế độ xem (Chỉ Trưởng nhóm có quyền sửa)
+              </span>
+            )}
+
             <button
               onClick={handleGenerateAI}
-              disabled={generating}
-              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-[#FF6B00] text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 disabled:opacity-50"
+              disabled={generating || !isLeader}
+              className={`px-4 py-2 bg-gradient-to-r from-amber-500 to-[#FF6B00] text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed`}
             >
               {generating ? (
                 <>
@@ -196,8 +203,8 @@ export default function CanvasGenerator() {
 
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-[#FF6B00] hover:bg-[#E85A00] text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 disabled:opacity-50"
+              disabled={saving || !isLeader}
+              className={`px-4 py-2 bg-[#FF6B00] hover:bg-[#E85A00] text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed`}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Lưu Canvas
@@ -233,6 +240,7 @@ export default function CanvasGenerator() {
                 🤝 Đối tác chính (Key Partners)
               </h4>
               <textarea
+                readOnly={!isLeader}
                 value={canvas.keyPartners}
                 onChange={e => setCanvas({ ...canvas, keyPartners: e.target.value })}
                 placeholder="Ai là đối tác chiến lược, nhà cung cấp chính..."
@@ -250,6 +258,7 @@ export default function CanvasGenerator() {
                   ⚡ Hoạt động chính (Key Activities)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.keyActivities}
                   onChange={e => setCanvas({ ...canvas, keyActivities: e.target.value })}
                   placeholder="Nhóm cần làm những gì để vận hành mô hình..."
@@ -265,6 +274,7 @@ export default function CanvasGenerator() {
                   💎 Nguồn lực chính (Key Resources)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.keyResources}
                   onChange={e => setCanvas({ ...canvas, keyResources: e.target.value })}
                   placeholder="Nhân lực, trí tuệ, tài chính cần thiết..."
@@ -282,6 +292,7 @@ export default function CanvasGenerator() {
                 🏆 Tuyên bố giá trị (Value Propositions)
               </h4>
               <textarea
+                readOnly={!isLeader}
                 value={canvas.valuePropositions}
                 onChange={e => setCanvas({ ...canvas, valuePropositions: e.target.value })}
                 placeholder="Giải pháp độc đáo, lý do khách hàng chọn bạn..."
@@ -299,6 +310,7 @@ export default function CanvasGenerator() {
                   ❤️ Quan hệ khách hàng (Relationships)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.customerRelationships}
                   onChange={e => setCanvas({ ...canvas, customerRelationships: e.target.value })}
                   placeholder="Cách thu hút và giữ chân khách hàng..."
@@ -314,6 +326,7 @@ export default function CanvasGenerator() {
                   📣 Kênh phân phối (Channels)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.channels}
                   onChange={e => setCanvas({ ...canvas, channels: e.target.value })}
                   placeholder="Cách sản phẩm tiếp cận đến tay khách hàng..."
@@ -331,6 +344,7 @@ export default function CanvasGenerator() {
                 👥 Phân khúc khách hàng (Segments)
               </h4>
               <textarea
+                readOnly={!isLeader}
                 value={canvas.customerSegments}
                 onChange={e => setCanvas({ ...canvas, customerSegments: e.target.value })}
                 placeholder="Ai là nhóm khách hàng mục tiêu lớn nhất..."
@@ -348,6 +362,7 @@ export default function CanvasGenerator() {
                   💸 Cơ cấu chi phí (Cost Structure)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.costStructure}
                   onChange={e => setCanvas({ ...canvas, costStructure: e.target.value })}
                   placeholder="Các khoản chi lớn nhất (Phát triển, máy chủ, marketing)..."
@@ -363,6 +378,7 @@ export default function CanvasGenerator() {
                   💰 Dòng doanh thu (Revenue Streams)
                 </h4>
                 <textarea
+                  readOnly={!isLeader}
                   value={canvas.revenueStreams}
                   onChange={e => setCanvas({ ...canvas, revenueStreams: e.target.value })}
                   placeholder="Tiền đến từ đâu (Bán gói dịch vụ, quảng cáo, hoa hồng)..."
