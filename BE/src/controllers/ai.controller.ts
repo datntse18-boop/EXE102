@@ -61,7 +61,8 @@ Trả lời theo định dạng JSON (chỉ JSON, không giải thích thêm):
           `Báo cáo thống kê và phân tích tiến độ thực tế.`
         ],
         potential: "High",
-        timeline: "4-6 tuần phát triển MVP"
+        timeline: "4-6 tuần phát triển MVP",
+        isFallback: true
       }
     }
 

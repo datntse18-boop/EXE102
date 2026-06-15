@@ -81,6 +81,12 @@ export default function IdeaGenerator() {
 
       {idea && (
         <div className="card border-l-4 border-[#FF6B00] animate-fadeIn">
+          {idea.isFallback && (
+            <div className="mb-4 p-4 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-2xl text-xs leading-normal">
+              ⚠️ <strong>Cảnh báo:</strong> Hệ thống AI của máy chủ chính hiện đang <strong>hết hạn mức (Quota 429)</strong>. Kết quả dưới đây là kết quả giả lập (mock data).
+              Để sử dụng <strong>AI thật 100%</strong> ngay lập tức, vui lòng bấm vào nút <strong>"Cấu hình Gemini AI"</strong> ở góc dưới menu bên trái (hoặc trong tab Cố vấn AI 24/7) và dán API Key cá nhân của bạn vào.
+            </div>
+          )}
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-xl font-bold text-gray-800">{idea.name}</h3>
