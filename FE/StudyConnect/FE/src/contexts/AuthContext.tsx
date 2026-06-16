@@ -37,14 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Auto-restore session on mount
   useEffect(() => {
     const restore = async () => {
-      const token = localStorage.getItem('accessToken')
+      const token = sessionStorage.getItem('accessToken')
       if (token) {
         try {
           const me = await authService.me()
           setUser(me)
         } catch {
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
+          sessionStorage.removeItem('accessToken')
+          sessionStorage.removeItem('refreshToken')
         }
       }
       setLoading(false)
@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const { user: userData, accessToken, refreshToken } = await authService.login(email, password)
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('refreshToken', refreshToken)
+    sessionStorage.setItem('accessToken', accessToken)
+    sessionStorage.setItem('refreshToken', refreshToken)
     setUser(userData)
   }
 

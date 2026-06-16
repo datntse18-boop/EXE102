@@ -49,7 +49,7 @@ api.interceptors.request.use(async (config) => {
     config.baseURL = dynamicApiUrl
   }
 
-  const token = localStorage.getItem('accessToken')
+  const token = sessionStorage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -71,19 +71,19 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       try {
-        const refreshToken = localStorage.getItem('refreshToken')
+        const refreshToken = sessionStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
 
         const baseUrl = getInitialBaseUrl()
         const { data } = await axios.post(`${baseUrl}/auth/refresh`, { refreshToken })
-        localStorage.setItem('accessToken', data.data.accessToken)
-        localStorage.setItem('refreshToken', data.data.refreshToken)
+        sessionStorage.setItem('accessToken', data.data.accessToken)
+        sessionStorage.setItem('refreshToken', data.data.refreshToken)
 
         originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`
         return api(originalRequest)
       } catch {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
+        sessionStorage.removeItem('accessToken')
+        sessionStorage.removeItem('refreshToken')
         window.location.href = '/login'
       }
     }

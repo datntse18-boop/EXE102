@@ -118,7 +118,7 @@ export default function AppRoutes() {
         <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PaymentHistory /></ProtectedRoute>} />
         <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupCertificate /></ProtectedRoute>} />
 
-        <Route path="team-management" element={<ProtectedRoute allowed={['leader','manager','admin']}><TeamManagement /></ProtectedRoute>} />
+        <Route path="team-management" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>
 
       {/* Manager routes (MainLayout) */}

@@ -12,10 +12,10 @@ export const authService = {
   },
 
   logout: async () => {
-    const refreshToken = localStorage.getItem('refreshToken')
+    const refreshToken = sessionStorage.getItem('refreshToken')
     await api.post('/auth/logout', { refreshToken })
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
+    sessionStorage.removeItem('accessToken')
+    sessionStorage.removeItem('refreshToken')
   },
 
   me: async () => {
@@ -296,6 +296,11 @@ export const aiService = {
   testKeyOnServer: async () => {
     const { data } = await api.post('/ai/idea-generator', { targetUsers: 'Test Users', problemArea: 'Test Problem', technology: 'React' })
     return data.success
+  },
+
+  globalAudit: async (teamId: string, userQuestion?: string) => {
+    const { data } = await api.post('/ai/global-audit', { teamId, userQuestion })
+    return data.data
   },
 }
 

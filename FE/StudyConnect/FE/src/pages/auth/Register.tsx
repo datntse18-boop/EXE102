@@ -31,8 +31,8 @@ export default function Register() {
     try {
       // Register using our unified api service
       const data = await authService.register(name, email, password)
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
+      sessionStorage.setItem('accessToken', data.accessToken)
+      sessionStorage.setItem('refreshToken', data.refreshToken)
       await login(email, password)
       nav('/dashboard')
     } catch (err: any) {

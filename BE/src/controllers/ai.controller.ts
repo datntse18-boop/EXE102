@@ -715,4 +715,184 @@ export const saveGeminiKey = async (req: AuthRequest, res: Response): Promise<vo
   }
 }
 
+// POST /api/ai/global-audit
+export const globalAudit = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { teamId, userQuestion } = req.body
+    if (!teamId) {
+      res.status(400).json({ success: false, message: 'teamId is required' })
+      return
+    }
+
+    // Fetch team, members, projects, tasks, weekly reports, financial model, and peer evaluations
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        leader: { select: { name: true, email: true } },
+        members: { include: { user: { select: { id: true, name: true, email: true, skills: true, desiredRole: true } } } },
+        projects: {
+          include: {
+            tasks: { include: { assignee: { select: { id: true, name: true, email: true } } } },
+            financialModel: true,
+          }
+        },
+        weeklyReports: true,
+        peerEvaluations: {
+          include: {
+            evaluator: { select: { name: true } },
+            evaluatee: { select: { id: true, name: true } }
+          }
+        }
+      }
+    })
+
+    if (!team) {
+      res.status(404).json({ success: false, message: 'Team not found' })
+      return
+    }
+
+    // Calculate dynamic member work completion metrics & peer evaluation scores
+    const memberStatsList = team.members.map(m => {
+      const userId = m.user.id
+      let totalTasks = 0
+      let completedTasks = 0
+      let todoTasks = 0
+      let inProgressTasks = 0
+
+      team.projects.forEach(p => {
+        p.tasks.forEach(t => {
+          if (t.assignedTo === userId) {
+            totalTasks++
+            if (t.status === 'completed') {
+              completedTasks++
+            } else if (t.status === 'in_progress') {
+              inProgressTasks++
+            } else {
+              todoTasks++
+            }
+          }
+        })
+      })
+
+      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+      // Get peer evaluations received by this member
+      const evals = team.peerEvaluations.filter(e => e.evaluateeId === userId)
+      let avgContribution = 0
+      let avgQuality = 0
+      let avgPunctuality = 0
+      if (evals.length > 0) {
+        const sumContrib = evals.reduce((sum, e) => sum + e.contribution, 0)
+        const sumQuality = evals.reduce((sum, e) => sum + e.qualityOfWork, 0)
+        const sumPunctual = evals.reduce((sum, e) => sum + e.punctuality, 0)
+        avgContribution = Number((sumContrib / evals.length).toFixed(1))
+        avgQuality = Number((sumQuality / evals.length).toFixed(1))
+        avgPunctuality = Number((sumPunctual / evals.length).toFixed(1))
+      }
+
+      return `- Thành viên: ${m.user.name} (${m.user.email})
+  * Vai trò mong muốn: ${m.user.desiredRole || 'Chưa đặt'} | Kỹ năng: ${m.user.skills || 'Chưa điền'}
+  * Thống kê Task: Đã giao: ${totalTasks} | Hoàn thành: ${completedTasks} | Đang làm: ${inProgressTasks} | Cần làm: ${todoTasks} | Tỷ lệ hoàn thành: ${completionRate}%
+  * Đánh giá chéo từ đồng đội: ${evals.length > 0 ? `Đóng góp: ${avgContribution}/5, Chất lượng: ${avgQuality}/5, Đúng hạn: ${avgPunctuality}/5 (Dựa trên ${evals.length} lượt đánh giá)` : 'Chưa có đánh giá chéo'}`
+    }).join('\n\n')
+
+    // Parse and summarize project documents (Business Model Canvas, Slides outline, Tasks details)
+    const projectsList = team.projects.map(p => {
+      const tasksList = p.tasks.map(t => `  * Task: "${t.title}" | Trạng thái: ${t.status} | Người làm: ${t.assignee?.name || 'Chưa giao'} | Hạn chót: ${t.dueDate ? t.dueDate.toISOString() : 'Không'}`).join('\n')
+      
+      const fin = p.financialModel 
+        ? `  * Kế hoạch tài chính: Chi phí cố định: ${p.financialModel.fixedCosts} VNĐ | Chi phí biến đổi: ${p.financialModel.variableCosts} VNĐ | Giá bán sản phẩm: ${p.financialModel.sellingPrice} VNĐ | Dự kiến doanh số: ${p.financialModel.projectedSales} sản phẩm | CAC (Chi phí tìm khách): ${p.financialModel.cac} VNĐ | LTV (Giá trị vòng đời khách): ${p.financialModel.ltv} VNĐ`
+        : '  * Kế hoạch tài chính: Chưa thiết lập.'
+
+      let canvasBrief = '  * Tài liệu Business Model Canvas: Chưa thiết lập.'
+      if (p.canvasModel) {
+        try {
+          const parsedCanvas = JSON.parse(p.canvasModel)
+          const items = Object.entries(parsedCanvas)
+            .map(([key, val]) => `    + ${key}: ${val}`)
+            .join('\n')
+          canvasBrief = `  * Tài liệu Business Model Canvas:\n${items}`
+        } catch (e) {
+          canvasBrief = `  * Tài liệu Business Model Canvas (Raw): ${p.canvasModel}`
+        }
+      }
+
+      let slideBrief = '  * Tài liệu Slide Outline (Dàn ý thuyết trình): Chưa thiết lập.'
+      if (p.slideOutline) {
+        try {
+          const parsedSlides = JSON.parse(p.slideOutline)
+          if (Array.isArray(parsedSlides)) {
+            const items = parsedSlides.map((s: any, idx: number) => `    + Slide ${idx + 1}: ${s.title || s.header || 'Không tiêu đề'} - ${s.content || 'Không nội dung'}`).join('\n')
+            slideBrief = `  * Tài liệu Slide Outline:\n${items}`
+          } else {
+            slideBrief = `  * Tài liệu Slide Outline: ${p.slideOutline}`
+          }
+        } catch (e) {
+          slideBrief = `  * Tài liệu Slide Outline: ${p.slideOutline}`
+        }
+      }
+
+      return `- Dự án: "${p.name}"\n  Mô tả: ${p.description || 'Chưa có mô tả'}\n${fin}\n${canvasBrief}\n${slideBrief}\n  Danh sách công việc chi tiết:\n${tasksList}`
+    }).join('\n\n')
+
+    const reportsList = team.weeklyReports.map(r => `- Tuần ${r.weekNumber}: Thành tựu: "${r.achievements}" | Kế hoạch tuần tới: "${r.plans}" | Khó khăn (Blockers): "${r.blockers}"`).join('\n')
+
+    const context = `DỮ LIỆU DỰ ÁN & TIẾN ĐỘ THỰC TẾ CỦA NHÓM "${team.name}":
+- Trưởng nhóm: ${team.leader?.name || 'N/A'}
+
+- CHI TIẾT BÁO CÁO HOÀN THÀNH & ĐÁNH GIÁ THÀNH VIÊN:
+${memberStatsList}
+
+- THÔNG TIN DỰ ÁN, TÀI LIỆU (BMC, SLIDES) VÀ KẾ HOẠCH:
+${projectsList}
+
+- NHẬT KÝ BÁO CÁO TUẦN (ACHIEVEMENTS & BLOCKERS):
+${reportsList}`
+
+    let prompt = ''
+    if (userQuestion) {
+      prompt = `Bạn là AI Cố Vấn Toàn Năng của StudyConnect. Dưới đây là toàn bộ dữ liệu dự án, tài liệu (Business Model Canvas, Slide Outline), tiến độ hoàn thành công việc và điểm số đánh giá chéo thực tế của từng thành viên:
+${context}
+
+Dựa trên dữ liệu thực tế trên, hãy trả lời câu hỏi sau của người dùng bằng tiếng Việt một cách sâu sắc, thực tế, chỉ rõ các số liệu hoặc tên thành viên nếu cần thiết:
+"${userQuestion}"`
+    } else {
+      prompt = `Bạn là AI Cố Vấn Toàn Năng của StudyConnect. Dưới đây là toàn bộ dữ liệu dự án, tài liệu (Business Model Canvas, Slide Outline), tiến độ hoàn thành công việc và điểm số đánh giá chéo thực tế của từng thành viên:
+${context}
+
+Hãy thực hiện chẩn đoán toàn diện (Global Project Audit) dự án bằng tiếng Việt. Bố cục trả lời gồm 4 phần rõ ràng (sử dụng Markdown):
+1. **Phân tích đóng góp & tiến độ thành viên**: Chỉ rõ ai hoàn thành tốt (dựa trên tỷ lệ hoàn thành task, số lượng task, và điểm đánh giá chéo trung bình từ đồng đội), ai đang bị chậm trễ/quá hạn công việc, sự mất cân bằng công việc (nếu có).
+2. **Đánh giá tính khả thi tài chính**: Phân tích giá bán, chi phí, điểm hòa vốn và tỷ lệ LTV/CAC xem có ổn không, đưa ra cảnh báo cụ thể.
+3. **Kiểm tra tài liệu dự án (BMC & Slide Outline)**: Đánh giá xem nhóm đã thiết lập Business Model Canvas và dàn ý slide đầy đủ chưa, ý tưởng dự án có điểm nghẽn gì về tài liệu hay không.
+4. **Đánh giá báo cáo tuần & giải pháp vượt qua khó khăn (Blockers)**: Phân tích các khó khăn hiện tại nhóm gặp phải trong báo cáo tuần và đề xuất cách giải quyết.
+5. **Hành động chiến lược đề xuất**: Liệt kê 3 hành động cụ thể cần làm ngay để đảm bảo dự án kịp tiến độ và đạt kết quả cao.`
+    }
+
+    let responseText = 'AI chưa thể chẩn đoán toàn diện dự án lúc này.'
+    try {
+      const model = getGeminiModel(req)
+      const result = await model.generateContent(prompt)
+      responseText = result.response.text().trim()
+      
+      // Log usage
+      await prisma.aIUsage.create({
+        data: {
+          userId: req.user!.id,
+          feature: 'analytics',
+          prompt: prompt.substring(0, 500),
+          response: responseText.substring(0, 1000)
+        }
+      })
+    } catch (err) {
+      console.error('Gemini Global Audit Error:', err)
+      responseText = `Lỗi kết nối Gemini AI. Chi tiết dữ liệu dự án:\n${context}\n\nVui lòng kiểm tra lại cấu hình API Key.`
+    }
+
+    res.json({ success: true, data: responseText })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Global audit failed' })
+  }
+}
+
 
