@@ -205,9 +205,24 @@ export const paymentService = {
     return data.data
   },
 
-  createPayment: async (plan: 'premium' | 'enterprise') => {
-    const { data } = await api.post('/payments', { plan })
-    return data
+  createPayment: async (
+    plan: 'premium' | 'enterprise',
+    txId?: string,
+    discountCode?: string,
+    amount?: number
+  ) => {
+    const { data } = await api.post('/payments', { plan, txId, discountCode, amount })
+    return data.data
+  },
+
+  confirmPayment: async (id: string) => {
+    const { data } = await api.patch(`/payments/${id}/confirm`)
+    return data.data
+  },
+
+  rejectPayment: async (id: string, reason?: string) => {
+    const { data } = await api.patch(`/payments/${id}/reject`, { reason })
+    return data.data
   },
 
   getStats: async () => {
@@ -215,6 +230,7 @@ export const paymentService = {
     return data.data
   },
 }
+
 
 export const aiService = {
   generateIdea: async (params: { targetUsers: string; problemArea: string; technology?: string }) => {
