@@ -364,20 +364,35 @@ export default function PeerEvaluation() {
                 
                 {/* Aggregate average metrics */}
                 <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30">
                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
                       Số người đánh giá
                     </span>
                     <span className="text-xl font-black text-[#FF6B00]">{stats.count}</span>
                   </div>
 
-                  <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-100 dark:border-green-900/30">
                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
                       Đóng góp TB (%)
                     </span>
-                    <span className="text-xl font-black text-green-600">{stats.averages.contribution}%</span>
+                    <span className="text-xl font-black text-green-600 dark:text-green-400">{stats.averages.contribution}%</span>
                   </div>
                 </div>
+
+                {/* Free-Rider / Low Contribution Alert */}
+                {stats.count > 0 && (stats.averages.contribution < 15 || stats.averages.qualityOfWork < 3.0) && (
+                  <div className="p-4 bg-red-50/50 dark:bg-red-950/15 border border-red-100 dark:border-red-900/30 rounded-2xl flex items-start gap-3 text-left animate-pulse">
+                    <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-extrabold text-red-750 dark:text-red-400 text-xs block">
+                        Cảnh báo hoạt động nhóm (Free-Rider Warning)
+                      </span>
+                      <p className="text-[10.5px] text-red-650 dark:text-red-400/90 leading-relaxed mt-1 font-medium">
+                        Đóng góp thực tế ({stats.averages.contribution}%) hoặc chất lượng công việc ({stats.averages.qualityOfWork}/5⭐) của bạn hiện đang được đồng đội đánh giá dưới mức trung bình của nhóm. Vui lòng liên hệ với Trưởng nhóm và chủ động nhận thêm công việc để cải thiện điểm số học phần của bạn!
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Radar chart */}
                 <div className="h-64 flex justify-center items-center">

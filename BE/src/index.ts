@@ -22,6 +22,7 @@ import surveyRoutes from './routes/survey.routes'
 import financialRoutes from './routes/financial.routes'
 import mentorRoutes from './routes/mentor.routes'
 import investmentRoutes from './routes/investment.routes'
+import githubRoutes from './routes/github.routes'
 
 dotenv.config()
 
@@ -81,6 +82,7 @@ app.use('/api/surveys', surveyRoutes)
 app.use('/api/financial', financialRoutes)
 app.use('/api/mentor', mentorRoutes)
 app.use('/api/investments', investmentRoutes)
+app.use('/api/github', githubRoutes)
 
 // 404 handler
 app.use((req, res) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import Card from '../../components/cards/Card'
-import { teamService, projectService, taskService, chatService, okrService, mentorService } from '../../services/apiServices'
+import { teamService, projectService, taskService, chatService, okrService, mentorService, githubService } from '../../services/apiServices'
 import AiConfigModal from '../../components/common/AiConfigModal'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -72,6 +72,61 @@ export default function Workspace() {
   const [newAssignee, setNewAssignee] = useState('')
   const [newPriority, setNewPriority] = useState('medium')
   const [newDueDate, setNewDueDate] = useState('')
+
+  // GitHub Integration States
+  const [githubUrl, setGithubUrl] = useState('')
+  const [savingGithubUrl, setSavingGithubUrl] = useState(false)
+  const [gitAction, setGitAction] = useState('close')
+  const [gitTaskTitle, setGitTaskTitle] = useState('')
+  const [simulatingWebhook, setSimulatingWebhook] = useState(false)
+
+  // Sync githubUrl when project changes
+  useEffect(() => {
+    if (selectedProject) {
+      setGithubUrl(selectedProject.githubUrl || '')
+    } else {
+      setGithubUrl('')
+    }
+  }, [selectedProject])
+
+  const handleSaveGithubUrl = async () => {
+    if (!selectedProject) return
+    setSavingGithubUrl(true)
+    try {
+      await projectService.updateProject(selectedProject.id, { githubUrl })
+      // Update local state
+      setSelectedProject((prev: any) => prev ? { ...prev, githubUrl } : null)
+      alert('Cấu hình GitHub Repository URL thành công!')
+    } catch (err) {
+      console.error(err)
+      alert('Không thể lưu GitHub URL. Vui lòng kiểm tra lại kết nối.')
+    } finally {
+      setSavingGithubUrl(false)
+    }
+  }
+
+  const handleSimulateWebhook = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !gitTaskTitle) return
+    setSimulatingWebhook(true)
+    try {
+      const res = await githubService.simulateWebhook(selectedProject.id, `${gitAction}: ${gitTaskTitle}`, githubUrl)
+      if (res.success && res.closedTask) {
+        // Automatically move task to completed in UI state
+        setTasks(prev => prev.map(t => t.id === res.closedTask.id ? { ...t, status: 'completed' } : t))
+        alert(res.message)
+        setGitTaskTitle('')
+      } else {
+        alert(res.message || 'Webhook đã được xử lý nhưng không tìm thấy Task phù hợp để đóng.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Lỗi giả lập Webhook push commit.')
+    } finally {
+      setSimulatingWebhook(false)
+    }
+  }
+
 
   // Load initial teams
   useEffect(() => {
@@ -475,7 +530,8 @@ export default function Workspace() {
         {/* TAB PANELS */}
         {activeTab === 'kanban' ? (
           /* KANBAN BOARD PANEL */
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-6">
             {/* TO DO Column */}
             <div className="bg-gray-550/30 dark:bg-white/5 rounded-2xl p-4 min-h-[500px] border border-gray-200 dark:border-gray-800/40">
               <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-gray-800">
@@ -524,7 +580,107 @@ export default function Workspace() {
               </div>
             </div>
           </div>
-        ) : activeTab === 'okr' ? (
+
+          {/* GitHub Automation Panel */}
+          <div className="bg-white dark:bg-[#13131C] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4 mt-6">
+            <div className="flex items-center justify-between border-b dark:border-gray-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🐙</span>
+                <div>
+                  <h4 className="text-xs font-black text-gray-800 dark:text-white">Cấu hình & Giả lập GitHub Webhook (Kanban Automation)</h4>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-0.5">Tự động cập nhật công việc Kanban khi lập trình viên push commit</p>
+                </div>
+              </div>
+              <span className="bg-orange-50 dark:bg-orange-950/20 text-[#FF6B00] border border-orange-100 dark:border-orange-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                GitHub Integration
+              </span>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 pt-1">
+              {/* Save GitHub URL Column */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">GitHub Repository URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://github.com/username/repository"
+                    value={githubUrl}
+                    onChange={e => setGithubUrl(e.target.value)}
+                    className="flex-1 text-xs border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 bg-transparent text-gray-900 dark:text-white focus:outline-none focus:border-[#FF6B00]"
+                  />
+                  <button
+                    onClick={handleSaveGithubUrl}
+                    disabled={savingGithubUrl}
+                    className="px-4 py-2 bg-[#FF6B00] hover:bg-[#E85A00] text-white rounded-xl text-xs font-bold transition disabled:opacity-55"
+                  >
+                    {savingGithubUrl ? 'Đang lưu...' : 'Lưu URL'}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-normal">
+                  💡 Điền URL GitHub của nhóm để kết nối với Webhook đồng bộ của dự án.
+                </p>
+              </div>
+
+              {/* Webhook Simulator Column */}
+              <div className="space-y-3 bg-gray-550/20 dark:bg-[#181824]/20 p-4 rounded-xl border border-gray-150 dark:border-gray-850">
+                <label className="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider block">Giả lập Push Commit từ GitHub</label>
+                <form onSubmit={handleSimulateWebhook} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-400 block mb-1">Mã lệnh (Action)</label>
+                      <select 
+                        value={gitAction} 
+                        onChange={e => setGitAction(e.target.value)}
+                        className="w-full text-[11px] border dark:border-gray-800 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#13131C] font-bold text-gray-700 dark:text-gray-300 focus:outline-none"
+                      >
+                        <option value="close">close:</option>
+                        <option value="fix">fix:</option>
+                        <option value="resolve">resolve:</option>
+                        <option value="complete">complete:</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-400 block mb-1">Chọn công việc đóng</label>
+                      <select 
+                        value={gitTaskTitle} 
+                        onChange={e => setGitTaskTitle(e.target.value)}
+                        className="w-full text-[11px] border dark:border-gray-800 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#13131C] font-bold text-gray-700 dark:text-gray-300 focus:outline-none"
+                        required
+                      >
+                        <option value="">-- Chọn Task --</option>
+                        {todoTasks.map(t => <option key={t.id} value={t.title}>{t.title}</option>)}
+                        {inProgressTasks.map(t => <option key={t.id} value={t.title}>{t.title}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-gray-400 block mb-1">Commit Message cuối cùng sẽ gửi</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={`${gitAction}: "${gitTaskTitle || 'Tên công việc'}"`}
+                      className="w-full text-xs border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-gray-150 dark:bg-gray-900 text-gray-500 font-mono"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={simulatingWebhook || !gitTaskTitle || !selectedProject}
+                    className="w-full py-2 bg-gradient-to-r from-orange-500 to-[#FF6B00] hover:shadow-md transition text-white text-xs font-black rounded-lg flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-55"
+                  >
+                    {simulatingWebhook ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" /> Đang gửi Webhook...
+                      </>
+                    ) : (
+                      'Gửi Webhook push commit'
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'okr' ? (
           /* OKR & KPI DASHBOARD PANEL */
           <div className="space-y-6">
             {loadingOKRs ? (

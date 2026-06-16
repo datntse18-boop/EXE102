@@ -30,6 +30,11 @@ export const userService = {
     return data.data
   },
 
+  getUnassignedStudents: async (classCode: string) => {
+    const { data } = await api.get('/users/unassigned', { params: { classCode } })
+    return data.data
+  },
+
   getUserById: async (id: string) => {
     const { data } = await api.get(`/users/${id}`)
     return data.data
@@ -302,6 +307,11 @@ export const aiService = {
     const { data } = await api.post('/ai/global-audit', { teamId, userQuestion })
     return data.data
   },
+
+  autoGrouping: async (classCode: string) => {
+    const { data } = await api.post('/ai/auto-grouping', { classCode })
+    return data
+  },
 }
 
 export const reportService = {
@@ -532,5 +542,12 @@ export const peerRadarService = {
     const { data } = await api.get(`/evaluation/team-radar/${teamId}`)
     return data.data
   },
+}
+
+export const githubService = {
+  simulateWebhook: async (projectId: string, commitMessage: string, repoUrl?: string) => {
+    const { data } = await api.post('/github/webhook', { projectId, commitMessage, repoUrl })
+    return data
+  }
 }
 

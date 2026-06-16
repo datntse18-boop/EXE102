@@ -134,9 +134,14 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 // POST /api/users — Admin and Leader (Dean) only
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, email, password, role, classCode, subscription } = req.body
-    if (!name || !email || !password || !role) {
-      res.status(400).json({ success: false, message: 'Name, email, password, and role are required' })
+    const { name, email, role, classCode, subscription, skills, desiredRole } = req.body
+    let { password } = req.body
+    if (!password) {
+      password = 'password123'
+    }
+
+    if (!name || !email || !role) {
+      res.status(400).json({ success: false, message: 'Name, email, and role are required' })
       return
     }
 
@@ -164,6 +169,8 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         classCode: classCode || null,
         subscription: (subscription || 'free') as any,
         avatar: role === 'manager' ? '👩‍🔬' : role === 'leader' ? '👩‍🎓' : '👤',
+        skills: skills || null,
+        desiredRole: desiredRole || null,
       },
       select: {
         id: true,
@@ -220,6 +227,40 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
   } catch (err) {
     console.error('Delete User Error:', err)
     res.status(500).json({ success: false, message: 'Server error deleting user' })
+  }
+}
+
+export const getUnassignedStudents = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { classCode } = req.query
+    if (!classCode) {
+      res.status(400).json({ success: false, message: 'classCode is required' })
+      return
+    }
+
+    const students = await prisma.user.findMany({
+      where: {
+        classCode: String(classCode),
+        role: 'member',
+        teamMemberships: {
+          none: {}
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        skills: true,
+        desiredRole: true,
+        classCode: true
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    res.json({ success: true, data: students })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Failed to fetch unassigned students' })
   }
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Card from '../../components/cards/Card'
-import { teamService, reportService, aiService, projectService } from '../../services/apiServices'
+import { teamService, reportService, aiService, projectService, userService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
   Users, 
@@ -31,6 +31,63 @@ export default function ManagerDashboard() {
   const [feedbackText, setFeedbackText] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
 
+  // AI Classroom & Grouping States
+  const [unassignedStudents, setUnassignedStudents] = useState<any[]>([])
+  const [groupingLoading, setGroupingLoading] = useState(false)
+  const [importingMock, setImportingMock] = useState(false)
+
+  const loadUnassignedStudents = async () => {
+    try {
+      const data = await userService.getUnassignedStudents(user?.classCode || 'EXE101-2026')
+      setUnassignedStudents(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleImportMockStudents = async () => {
+    setImportingMock(true)
+    try {
+      const mockStudents = [
+        { name: 'Nguyễn Minh Quân', email: 'quan.nm@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'Figma, UI/UX Design', desiredRole: 'UI/UX Designer' },
+        { name: 'Trần Thanh Sơn', email: 'son.tt@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'Node.js, Postgres, Express', desiredRole: 'Backend Developer' },
+        { name: 'Đặng Thùy Dương', email: 'duong.dt@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'React, Tailwind CSS, JS', desiredRole: 'Frontend Developer' },
+        { name: 'Lê Tuấn Kiệt', email: 'kiet.lt@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'PowerPoint, Pitching, BA', desiredRole: 'Business Analyst' },
+        { name: 'Vũ Quốc Anh', email: 'anh.vq@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'QA/QC, Testing, Cypress', desiredRole: 'Tester/QA' },
+        { name: 'Phạm Hồng Nhung', email: 'nhung.ph@example.com', role: 'member', classCode: user?.classCode || 'EXE101-2026', skills: 'Financial Modeling, Pitching', desiredRole: 'Product Owner' }
+      ]
+
+      await Promise.all(mockStudents.map(student => userService.createUser(student)))
+      await loadUnassignedStudents()
+      alert('Giả lập nạp 6 học viên từ tệp Excel thành công! Danh sách học viên chưa phân nhóm đã được cập nhật.')
+    } catch (err) {
+      console.error(err)
+      alert('Không thể nạp học viên giả lập. Có thể email đã tồn tại.')
+    } finally {
+      setImportingMock(false)
+    }
+  }
+
+  const handleAIAutoGrouping = async () => {
+    setGroupingLoading(true)
+    try {
+      const res = await aiService.autoGrouping(user?.classCode || 'EXE101-2026')
+      if (res.success) {
+        alert(res.message)
+        const teamsData = await teamService.getTeams()
+        setTeams(teamsData)
+        setUnassignedStudents([])
+      } else {
+        alert(res.message || 'Xếp nhóm thất bại.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('AI xếp nhóm thất bại. Vui lòng kiểm tra lại kết nối hoặc tài khoản API Key.')
+    } finally {
+      setGroupingLoading(false)
+    }
+  }
+
   const loadData = async () => {
     try {
       const [teamsData, statsData] = await Promise.all([
@@ -42,6 +99,7 @@ export default function ManagerDashboard() {
       if (teamsData.length > 0 && !inspectingTeamId) {
         setInspectingTeamId(teamsData[0].id)
       }
+      await loadUnassignedStudents()
     } catch (err) {
       console.error(err)
     } finally {
@@ -272,6 +330,108 @@ export default function ManagerDashboard() {
                       </button>
                     </div>
                   </form>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* AI Classroom & Auto-Grouping Widget */}
+          <Card className="border-t-4 border-indigo-500 bg-indigo-50/5">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-indigo-600 animate-pulse" />
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm">Quản lý Lớp học & Xếp nhóm Tự động bằng AI</h3>
+                  <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Mã lớp: {user?.classCode || 'EXE101-2026'}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleImportMockStudents}
+                  disabled={importingMock}
+                  className="px-3.5 py-1.5 border border-indigo-100 text-indigo-600 bg-indigo-50/30 hover:bg-indigo-50 text-[10px] font-bold rounded-xl transition flex items-center gap-1.5"
+                >
+                  {importingMock ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Đang nạp...
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="w-3 h-3" />
+                      Nạp học viên (Excel)
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleAIAutoGrouping}
+                  disabled={groupingLoading || unassignedStudents.length === 0}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold rounded-xl shadow-sm hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  {groupingLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Đang xếp nhóm...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3" />
+                      Kích hoạt AI Xếp nhóm
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-indigo-50/20 p-3 rounded-2xl border border-indigo-100/50">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-800">
+                    Học viên chưa phân nhóm ({unassignedStudents.length})
+                  </span>
+                  {unassignedStudents.length > 0 && (
+                    <span className="text-[9px] font-medium text-indigo-600 bg-indigo-100/50 px-2 py-0.5 rounded-full">
+                      Cần tối thiểu 3 học viên để bắt đầu xếp nhóm
+                    </span>
+                  )}
+                </div>
+
+                {unassignedStudents.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                    {unassignedStudents.map((student, idx) => (
+                      <div key={student.id || idx} className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-gray-100 hover:border-indigo-100 transition">
+                        <div>
+                          <p className="text-xs font-bold text-gray-800">{student.name}</p>
+                          <p className="text-[9px] text-gray-400">{student.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded-lg">
+                            {student.desiredRole || 'Chưa chọn vai trò'}
+                          </span>
+                          <p className="text-[8px] text-gray-400 mt-0.5 max-w-[150px] truncate">
+                            Kỹ năng: {student.skills || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <span className="text-2xl mb-1 block">🎉</span>
+                    <p className="text-xs font-bold text-gray-500">Lớp học hiện tại không có học viên tự do!</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Hãy nhấn "Nạp học viên (Excel)" để giả lập nhập danh sách học viên mới.</p>
+                  </div>
+                )}
+              </div>
+
+              {unassignedStudents.length > 0 && (
+                <div className="p-3 bg-yellow-50/30 rounded-xl border border-yellow-100 text-[10px] text-yellow-800 leading-relaxed flex items-start gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Nguyên tắc xếp nhóm của AI:</span>
+                    Hệ thống sẽ chuyển thông tin danh sách học viên chưa phân nhóm cho Gemini AI để phân tích kỹ năng và vai trò mong muốn (BA, Frontend, Backend, UI/UX). AI sẽ tự động gom các thành viên thành nhóm startup đồng sáng lập cân bằng và gán nhóm trưởng ngẫu nhiên phù hợp nhất.
+                  </div>
                 </div>
               )}
             </div>

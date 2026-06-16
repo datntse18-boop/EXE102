@@ -162,6 +162,7 @@ model Project {
   canvasModel   String?     // JSON string representing 9 boxes of Business Model Canvas
   isPublic      Boolean     @default(false)
   slideOutline  String?     // JSON string representing slide outline
+  githubUrl     String?     // URL to the group's GitHub repository
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
