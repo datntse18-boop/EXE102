@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
+import bcrypt from 'bcryptjs'
 
 // GET /api/users — Admin only
 export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -115,3 +116,56 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// POST /api/users — Admin and Leader (Dean) only
+export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, email, password, role, classCode, subscription } = req.body
+    if (!name || !email || !password || !role) {
+      res.status(400).json({ success: false, message: 'Name, email, password, and role are required' })
+      return
+    }
+
+    const validRoles = ['member', 'leader', 'manager', 'admin']
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ success: false, message: 'Invalid role' })
+      return
+    }
+
+    // Check if email already exists
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      res.status(400).json({ success: false, message: 'Email already exists' })
+      return
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: role as any,
+        classCode: classCode || null,
+        subscription: (subscription || 'free') as any,
+        avatar: role === 'manager' ? '👩‍🔬' : role === 'admin' ? '👨‍💻' : role === 'leader' ? '👩‍🎓' : '👤',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        subscription: true,
+        classCode: true,
+        createdAt: true,
+      }
+    })
+
+    res.status(201).json({ success: true, data: newUser })
+  } catch (err) {
+    console.error('Create User Error:', err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+

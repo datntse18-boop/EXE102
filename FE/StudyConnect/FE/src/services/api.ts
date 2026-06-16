@@ -1,14 +1,54 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+/**
+ * API Base URL resolution priority:
+ * 1. If on localhost → use local backend directly (bypass tunnels / Cisco Umbrella)
+ * 2. If VITE_API_URL env is set (e.g. Render URL on Vercel production) → use that
+ * 3. Fallback: /config.json (for Serveo tunnel dynamic config)
+ */
+function getInitialBaseUrl(): string {
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3000/api'
+  }
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL as string
+  }
+  return '/api' // fallback
+}
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getInitialBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach JWT token and Gemini API key to every request
-api.interceptors.request.use((config) => {
+let dynamicApiUrl = ''
+
+// Attach JWT token and optional Gemini API key to every request
+api.interceptors.request.use(async (config) => {
+  const hostname = window.location.hostname
+
+  // On localhost: always use local backend, skip dynamic config
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    config.baseURL = 'http://localhost:3000/api'
+  } else if (import.meta.env.VITE_API_URL) {
+    // On Vercel production: use env var baked in at build time
+    config.baseURL = import.meta.env.VITE_API_URL as string
+  } else if (!dynamicApiUrl && !config.url?.endsWith('/config.json')) {
+    // Fallback: load from /config.json (Serveo tunnel dynamic config)
+    try {
+      const { data } = await axios.get('/config.json')
+      if (data?.backendUrl) {
+        dynamicApiUrl = data.backendUrl + '/api'
+        config.baseURL = dynamicApiUrl
+      }
+    } catch {
+      // ignore – continue with default baseURL
+    }
+  } else if (dynamicApiUrl) {
+    config.baseURL = dynamicApiUrl
+  }
+
   const token = localStorage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
@@ -17,6 +57,9 @@ api.interceptors.request.use((config) => {
   if (geminiKey) {
     config.headers['x-gemini-key'] = geminiKey
   }
+  // Bypass tunnel warning pages
+  config.headers['Bypass-Tunnel-Reminder'] = 'true'
+
   return config
 })
 
@@ -31,7 +74,8 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
 
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken })
+        const baseUrl = getInitialBaseUrl()
+        const { data } = await axios.post(`${baseUrl}/auth/refresh`, { refreshToken })
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
 

@@ -4,7 +4,7 @@ import {
   X,
   Key,
   Database,
-  Chrome,
+  Globe,
   AlertTriangle,
   CheckCircle,
   HelpCircle,
@@ -227,7 +227,7 @@ export default function AiConfigModal({ isOpen, onClose }: AiConfigModalProps) {
               disabled={savingLocal || savingServer}
               className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
             >
-              {savingLocal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Chrome className="w-3.5 h-3.5" />}
+              {savingLocal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
               Lưu trình duyệt này
             </button>
 

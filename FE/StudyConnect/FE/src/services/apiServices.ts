@@ -35,6 +35,11 @@ export const userService = {
     return data.data
   },
 
+  createUser: async (user: { name: string; email: string; password?: string; role: string; classCode?: string; subscription?: string }) => {
+    const { data } = await api.post('/users', user)
+    return data.data
+  },
+
   updateRole: async (id: string, role: string) => {
     const { data } = await api.patch(`/users/${id}/role`, { role })
     return data.data

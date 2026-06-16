@@ -185,9 +185,10 @@ export default function Sidebar() {
         },
         {
           id: 'grading',
-          label: 'Giám sát toàn khoa',
+          label: 'Giám sát & Quản lý',
           icon: <GraduationCap size={14} />,
           items: [
+            { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={14} /> },
             { to: '/gradebook', label: 'Sổ điểm toàn khoa', icon: <FileSpreadsheet size={14} /> },
             { to: '/weekly-checkin', label: 'Báo cáo tuần toàn khoa', icon: <CalendarDays size={14} /> },
             { to: '/project-showcase', label: 'Trưng bày dự án', icon: <Eye size={14} /> },
@@ -262,13 +263,13 @@ export default function Sidebar() {
       </button>
       
       {/* Sidebar Main */}
-      <aside className={`fixed md:relative w-64 border-r border-[#161622] bg-[#0B0B0F] text-gray-300 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 h-screen flex flex-col z-20 shadow-[4px_0_20px_rgba(0,0,0,0.3)]`}>
+      <aside className={`fixed md:sticky md:top-0 self-start w-64 border-r border-[#161622] bg-[#0B0B0F] text-gray-300 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 h-screen flex flex-col z-20 shadow-[4px_0_20px_rgba(0,0,0,0.3)] shrink-0`}>
         
         {/* Logo Section */}
         <div className="p-6 border-b border-[#161622] flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF801A] text-white shadow-md shadow-orange-500/10">
-              <span className="text-sm">🚀</span>
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="text-lg font-black text-white tracking-tight">
               Study<span className="text-[#FF6B00]">Connect</span>
@@ -276,8 +277,8 @@ export default function Sidebar() {
           </div>
           {user && (
             <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-2xl border border-white/5 shadow-inner">
-              <div className="text-3xl bg-white/10 w-11 h-11 rounded-xl flex items-center justify-center border border-white/10">
-                {user.avatar || '👤'}
+              <div className="text-3xl bg-white/10 border border-white/10 w-11 h-11 rounded-xl flex items-center justify-center">
+                {user.avatar ? <span className="text-lg">{user.avatar}</span> : <User className="w-5 h-5 text-gray-400" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] font-black text-white truncate">{user.name}</div>
@@ -299,7 +300,7 @@ export default function Sidebar() {
                 {/* Category Header */}
                 <button
                   onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg hover:text-[#FF6B00] hover:bg-white/5 transition duration-200"
+                  className="w-full flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg hover:text-white hover:bg-white/5 transition duration-200"
                 >
                   <span className="flex items-center gap-2">
                     {category.icon}
@@ -326,12 +327,11 @@ export default function Sidebar() {
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 ${
                             isActive
-                              ? 'bg-gradient-to-r from-orange-600/20 to-orange-500/10 border-l-2 border-[#FF6B00] text-white shadow-[0_0_15px_rgba(255,107,0,0.08)]'
+                              ? 'bg-gradient-to-r from-orange-600/20 to-orange-500/10 text-white border-l-2 border-[#FF6B00] shadow-[0_0_15px_rgba(255,107,0,0.08)]'
                               : 'text-gray-400 hover:bg-white/5 hover:text-white'
                           }`
                         }
                       >
-                        <span className="shrink-0">{item.icon}</span>
                         <span>{item.label}</span>
                       </NavLink>
                     ))}
@@ -346,14 +346,14 @@ export default function Sidebar() {
         <div className="p-4 border-t border-[#161622]">
           <button 
             onClick={() => setIsAiModalOpen(true)} 
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 border border-orange-500/15 transition duration-300 shadow-sm mb-2.5"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/15 transition duration-300 shadow-sm mb-2.5"
           >
             <Sparkles size={14} />
             Cấu hình Gemini AI
           </button>
           <button 
             onClick={logout} 
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/15 transition duration-300 shadow-sm"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/15 transition duration-300 shadow-sm"
           >
             <LogOut size={14} />
             Đăng xuất tài khoản

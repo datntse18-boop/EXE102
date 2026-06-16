@@ -23,9 +23,9 @@
   }
   body {
     @apply bg-[var(--color-bg)] text-[var(--color-text)] antialiased;
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.010em;
   }
   a { @apply text-[var(--color-primary)] font-semibold transition-colors duration-200; }
 }

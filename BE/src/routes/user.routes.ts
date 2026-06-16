@@ -1,15 +1,16 @@
 import { Router } from 'express'
-import { getUsers, getUserById, updateUserRole, updateUserStatus, updateProfile } from '../controllers/user.controller'
+import { getUsers, getUserById, updateUserRole, updateUserStatus, updateProfile, createUser } from '../controllers/user.controller'
 import { authenticate, authorize } from '../middleware/auth.middleware'
 
 const router = Router()
 
 router.use(authenticate)
 
-router.get('/', authorize('admin', 'manager'), getUsers)
+router.get('/', authorize('admin', 'manager', 'leader'), getUsers)
+router.post('/', authorize('admin', 'leader'), createUser)
 router.get('/:id', getUserById)
 router.patch('/profile', updateProfile)
-router.patch('/:id/role', authorize('admin'), updateUserRole)
-router.patch('/:id/status', authorize('admin'), updateUserStatus)
+router.patch('/:id/role', authorize('admin', 'leader'), updateUserRole)
+router.patch('/:id/status', authorize('admin', 'leader'), updateUserStatus)
 
 export default router

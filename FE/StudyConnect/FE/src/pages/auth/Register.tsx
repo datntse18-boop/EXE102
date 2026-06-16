@@ -55,7 +55,7 @@ export default function Register() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Nguyễn Văn A"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#FF6B00] transition"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B00] transition"
             required
           />
         </div>
@@ -66,7 +66,7 @@ export default function Register() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="email@example.com"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#FF6B00] transition"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B00] transition"
             required
           />
         </div>
@@ -78,7 +78,7 @@ export default function Register() {
             onChange={e => setPassword(e.target.value)}
             placeholder="Tối thiểu 6 ký tự"
             minLength={6}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#FF6B00] transition"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B00] transition"
             required
           />
         </div>

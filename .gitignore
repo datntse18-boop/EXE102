@@ -12,3 +12,9 @@ FE/StudyConnect/FE/node_modules/
 FE/StudyConnect/FE/dist/
 FE/StudyConnect/FE/.env
 FE/StudyConnect/.git
+
+# Tunnel scripts & dynamic config (không cần thiết trên cloud)
+FE/StudyConnect/FE/public/config.json
+start-serveo-tunnels.js
+start-tunnels.js
+BE/start-tunnels.js

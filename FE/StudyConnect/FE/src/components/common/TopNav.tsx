@@ -1,12 +1,11 @@
 import { useAuth } from '../../contexts/AuthContext'
-import { LogOut, Zap, Shield, Sparkles, Bell, Sun, Moon } from 'lucide-react'
+import { LogOut, Shield, Sparkles, Bell, Sun, Moon } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { notificationService } from '../../services/apiServices'
 
 export default function TopNav() {
-  const { user, logout, login } = useAuth()
-  const [showRoleMenu, setShowRoleMenu] = useState(false)
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   // Theme State
@@ -28,13 +27,6 @@ export default function TopNav() {
   // Notification States
   const [notifications, setNotifications] = useState<any[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
-
-  const roles = [
-    { name: 'member', label: 'Sinh viên 👩‍💼', email: 'alice@example.com' },
-    { name: 'manager', label: 'Giảng viên 👩‍🔬', email: 'carol@example.com' },
-    { name: 'leader', label: 'Quản lý (Dean) 👩‍🎓', email: 'emma@example.com' },
-    { name: 'admin', label: 'Admin (IT) 👨‍💻', email: 'david@example.com' },
-  ]
 
   const loadNotifications = async () => {
     try {
@@ -80,87 +72,52 @@ export default function TopNav() {
     }
   }
 
-  const handleDemoLogin = async (roleName: string, email: string) => {
-    try {
-      await login(email, 'password123')
-      setShowRoleMenu(false)
-      if (roleName === 'admin') {
-        navigate('/admin')
-      } else if (roleName === 'manager') {
-        navigate('/manager')
-      } else {
-        navigate('/dashboard')
-      }
-    } catch (err) {
-      console.error('Demo login error', err)
-      alert('Đăng nhập demo thất bại')
-    }
-  }
-
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
+    <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800/40 bg-white/80 dark:bg-[#0B0B0F]/80 backdrop-blur-md sticky top-0 z-30 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FF801A] text-white shadow-md">
-          <span className="text-sm">🚀</span>
+          <Sparkles className="w-4 h-4 text-white" />
         </div>
-        <h1 className="text-lg font-extrabold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden sm:block">
+        <Link to="/" className="text-lg font-extrabold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent dark:from-white dark:to-gray-300 sm:block">
           Study<span className="text-[#FF6B00]">Connect</span>
-        </h1>
+        </Link>
       </div>
 
       <div className="flex items-center gap-4">
         {!user ? (
-          <div className="flex gap-2">
-            <button 
-              onClick={() => handleDemoLogin('member', 'alice@example.com')} 
-              className="px-3.5 py-1.5 rounded-xl bg-[#FF6B00] text-white text-xs font-bold hover:bg-[#E85A00] transition shadow-sm"
+          <div className="flex items-center gap-3">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              title={isDarkMode ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+              className="p-2 rounded-xl text-gray-400 hover:text-[#FF6B00] hover:bg-[#FFF4E8]/50 transition cursor-pointer"
             >
-              Demo Member
+              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
-            <button 
-              onClick={() => handleDemoLogin('admin', 'david@example.com')} 
-              className="px-3.5 py-1.5 rounded-xl bg-gray-100 text-gray-800 text-xs font-bold hover:bg-gray-200 transition"
+            <Link 
+              to="/login" 
+              className="px-4 py-2 text-xs font-bold text-gray-650 hover:text-[#FF6B00] transition"
             >
-              Demo Admin
-            </button>
+              Đăng nhập
+            </Link>
+            <Link 
+              to="/register" 
+              className="px-4 py-2 rounded-xl bg-[#FF6B00] text-white text-xs font-bold hover:bg-[#E85A00] transition shadow-md shadow-orange-500/10"
+            >
+              Đăng ký
+            </Link>
           </div>
         ) : (
           <div className="flex items-center gap-3">
             <div className="text-right hidden md:block">
-              <div className="text-xs font-bold text-gray-800 flex items-center gap-1">
+              <div className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1">
                 {user.name}
                 {user.subscription === 'premium' && <Sparkles className="w-3 h-3 text-[#FF6B00]" />}
                 {user.subscription === 'enterprise' && <Shield className="w-3 h-3 text-[#FF6B00]" />}
               </div>
-              <div className="text-[10px] font-bold text-gray-400 capitalize bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-0.5">
+              <div className="text-[10px] font-bold text-gray-400 capitalize bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full inline-block mt-0.5">
                 {user.role}
               </div>
-            </div>
-
-            {/* Role Switcher - Demo Only */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowRoleMenu(!showRoleMenu)} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-100 text-[#FF6B00] bg-[#FFF4E8]/50 hover:bg-[#FFF4E8] hover:border-orange-200 transition text-xs font-bold"
-              >
-                <Zap size={12} className="fill-[#FF6B00]" />
-                Role Switcher
-              </button>
-              {showRoleMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 p-1.5 animate-fadeIn">
-                  <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-gray-400">Chọn vai trò demo</div>
-                  {roles.map(r => (
-                    <button 
-                      key={r.name} 
-                      onClick={() => handleDemoLogin(r.name, r.email)} 
-                      className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-[#FFF4E8] hover:text-[#FF6B00] transition font-bold text-gray-700 flex justify-between items-center"
-                    >
-                      <span>{r.label}</span>
-                      {user.role === r.name && <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></span>}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Dark Mode Toggle */}
@@ -190,8 +147,8 @@ export default function TopNav() {
                 )}
               </button>
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 p-2 animate-fadeIn">
-                  <div className="flex items-center justify-between border-b pb-2 px-2.5">
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#13131C] border border-gray-100 dark:border-gray-800/40 rounded-2xl shadow-xl z-50 p-2 animate-fadeIn">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-850 pb-2 px-2.5">
                     <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Thông báo</span>
                     {unreadCount > 0 && (
                       <button
@@ -202,7 +159,7 @@ export default function TopNav() {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-60 overflow-y-auto divide-y divide-gray-50 mt-1">
+                  <div className="max-h-60 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800/20 mt-1">
                     {notifications.length === 0 ? (
                       <p className="text-[10px] text-gray-400 italic text-center py-6">Chưa có thông báo mới.</p>
                     ) : (
@@ -211,7 +168,7 @@ export default function TopNav() {
                           key={n.id}
                           onClick={() => handleNotificationClick(n)}
                           className={`p-2.5 rounded-xl cursor-pointer text-xs transition font-medium ${
-                            n.isRead ? 'text-gray-500 hover:bg-gray-50' : 'bg-orange-50/20 text-gray-800 hover:bg-orange-50/40 border-l-2 border-[#FF6B00]'
+                            n.isRead ? 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5' : 'bg-orange-50/20 text-gray-850 dark:text-gray-200 hover:bg-orange-50/40 dark:hover:bg-orange-50/10 border-l-2 border-[#FF6B00]'
                           }`}
                         >
                           <div className="font-bold">{n.title}</div>

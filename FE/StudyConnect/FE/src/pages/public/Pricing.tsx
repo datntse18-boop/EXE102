@@ -15,9 +15,10 @@ import {
 } from 'lucide-react'
 import Card from '../../components/cards/Card'
 import { useAuth } from '../../contexts/AuthContext'
+import { paymentService, authService } from '../../services/apiServices'
 
 export default function Pricing() {
-  const { user } = useAuth()
+  const { user, updateUserData } = useAuth()
   
   // Checkout Modal State
   const [showModal, setShowModal] = useState(false)
@@ -73,12 +74,18 @@ export default function Pricing() {
   }
 
   // Simulate payment confirmation
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     setSimulating(true)
-    setTimeout(() => {
-      setSimulating(false)
+    try {
+      await paymentService.createPayment('premium')
+      const me = await authService.me()
+      updateUserData(me)
       setStep('success')
-    }, 1500)
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi nâng cấp tài khoản.')
+    } finally {
+      setSimulating(false)
+    }
   }
 
   // Download Invoice as TXT

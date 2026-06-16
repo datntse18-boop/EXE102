@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import AuthLayout from '../layouts/AuthLayout'
-import AdminLayout from '../layouts/AdminLayout'
+import PublicLayout from '../layouts/PublicLayout'
 import { useAuth } from '../contexts/AuthContext'
 
 // Public pages
@@ -75,7 +75,7 @@ export default function AppRoutes() {
       <Route path="/app" element={<RoleBasedRedirect />} />
 
       {/* Public pages */}
-      <Route path="/" element={<MainLayout />}> 
+      <Route path="/" element={<PublicLayout />}> 
         <Route index element={<Landing />} />
         <Route path="pricing" element={<Pricing />} />
       </Route>
@@ -128,7 +128,7 @@ export default function AppRoutes() {
       {/* Admin routes (AdminLayout) */}
       <Route path="/admin" element={<MainLayout />}>
         <Route index element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="users" element={<ProtectedRoute allowed={['admin']}><UserManagement /></ProtectedRoute>} />
+        <Route path="users" element={<ProtectedRoute allowed={['admin', 'leader']}><UserManagement /></ProtectedRoute>} />
         <Route path="subscriptions" element={<ProtectedRoute allowed={['admin']}><SubscriptionManagement /></ProtectedRoute>} />
         <Route path="payments" element={<ProtectedRoute allowed={['admin']}><PaymentManagement /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowed={['admin']}><ReportManagement /></ProtectedRoute>} />

@@ -22,7 +22,8 @@ import {
   BookOpen,
   Eye,
   GraduationCap,
-  LayoutGrid
+  LayoutGrid,
+  Users
 } from 'lucide-react'
 
 export default function Dashboard() {
@@ -214,13 +215,13 @@ export default function Dashboard() {
     }
   }
 
-  const StatBox = ({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) => (
+  const StatBox = ({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) => (
     <div className={`card border-l-4 ${color} flex items-center justify-between p-5 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.01)] hover:shadow-md transition-all duration-300`}>
       <div>
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
         <p className="text-2xl font-black text-gray-800 mt-1">{loading ? '...' : value}</p>
       </div>
-      <div className="text-2xl">{icon}</div>
+      <div className="shrink-0">{icon}</div>
     </div>
   )
 
@@ -267,10 +268,10 @@ export default function Dashboard() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatBox label="Giảng viên phụ trách" value={lecturers.length} icon="👨‍🏫" color="border-[#FF6B00]" />
-          <StatBox label="Số lớp học hiện tại" value={new Set(lecturers.map(l => l.classCode).filter(Boolean)).size} icon="📚" color="border-blue-500" />
-          <StatBox label="Tổng số nhóm dự án" value={teams.length} icon="👥" color="border-green-500" />
-          <StatBox label="Điểm sức khỏe trung bình" value={`${avgHealth}%`} icon="❤️" color="border-yellow-500" />
+          <StatBox label="Giảng viên phụ trách" value={lecturers.length} icon={<Users className="w-6 h-6 text-[#FF6B00]" />} color="border-[#FF6B00]" />
+          <StatBox label="Số lớp học hiện tại" value={new Set(lecturers.map(l => l.classCode).filter(Boolean)).size} icon={<BookOpen className="w-6 h-6 text-blue-500" />} color="border-blue-500" />
+          <StatBox label="Tổng số nhóm dự án" value={teams.length} icon={<LayoutGrid className="w-6 h-6 text-green-500" />} color="border-green-500" />
+          <StatBox label="Điểm sức khỏe trung bình" value={`${avgHealth}%`} icon={<Activity className="w-6 h-6 text-yellow-500" />} color="border-yellow-500" />
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -440,10 +441,10 @@ export default function Dashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatBox label="Nhóm đang tham gia" value={teams.length} icon="👥" color="border-[#FF6B00]" />
-        <StatBox label="Nhiệm vụ được giao" value={tasks.length} icon="🎯" color="border-blue-500" />
-        <StatBox label="Đã hoàn thành" value={tasks.filter(t => t.status === 'completed').length} icon="✓" color="border-green-500" />
-        <StatBox label="Đang làm" value={tasks.filter(t => t.status === 'in_progress').length} icon="⚡" color="border-yellow-500" />
+        <StatBox label="Nhóm đang tham gia" value={teams.length} icon={<Users className="w-6 h-6 text-[#FF6B00]" />} color="border-[#FF6B00]" />
+        <StatBox label="Nhiệm vụ được giao" value={tasks.length} icon={<CheckCircle className="w-6 h-6 text-blue-500" />} color="border-blue-500" />
+        <StatBox label="Đã hoàn thành" value={tasks.filter(t => t.status === 'completed').length} icon={<CheckCircle className="w-6 h-6 text-green-500" />} color="border-green-500" />
+        <StatBox label="Đang làm" value={tasks.filter(t => t.status === 'in_progress').length} icon={<Clock className="w-6 h-6 text-yellow-500" />} color="border-yellow-500" />
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">

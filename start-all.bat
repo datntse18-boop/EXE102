@@ -21,6 +21,11 @@ echo [3/3] Khoi dong Frontend (port 5173)...
 start "StudyConnect FE" cmd /k "cd /d e:\EXE\FE\StudyConnect\FE && npm run dev"
 
 echo.
+echo  Dang mo browser...
+timeout /t 2 /nobreak >nul
+start http://localhost:5173
+
+echo.
 echo ====================================
 echo  BE: http://localhost:3000
 echo  FE: http://localhost:5173
