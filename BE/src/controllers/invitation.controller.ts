@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { createNotification } from './notification.controller'
 
 // GET /api/invitations — Get invitations for current user
 export const getInvitations = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -67,6 +68,19 @@ export const createInvitation = async (req: AuthRequest, res: Response): Promise
         toUser: { select: { id: true, name: true } },
       },
     })
+
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      select: { name: true }
+    })
+
+    await createNotification(
+      toUserId,
+      'Bạn nhận được lời mời tham gia nhóm 📬',
+      `Người dùng ${req.user!.name} đã mời bạn gia nhập nhóm "${team?.name || ''}".`,
+      '/workspace'
+    )
+
     res.status(201).json({ success: true, data: invitation })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
@@ -127,6 +141,18 @@ export const respondToInvitation = async (req: AuthRequest, res: Response): Prom
         }
       }
     }
+
+    const team = await prisma.team.findUnique({
+      where: { id: invitation.teamId },
+      select: { name: true }
+    })
+
+    await createNotification(
+      invitation.fromUserId,
+      status === 'accepted' ? 'Lời mời tham gia nhóm được chấp nhận ✅' : 'Lời mời tham gia nhóm bị từ chối ❌',
+      `Người dùng ${req.user!.name} đã ${status === 'accepted' ? 'đồng ý' : 'từ chối'} gia nhập nhóm "${team?.name || ''}".`,
+      '/workspace'
+    )
 
     res.json({ success: true, data: updated })
   } catch (err) {

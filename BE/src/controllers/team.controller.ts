@@ -156,6 +156,15 @@ export const deleteTeam = async (req: AuthRequest, res: Response): Promise<void>
       return
     }
 
+    // Fetch members to notify them
+    const membersToNotify = await prisma.teamMember.findMany({
+      where: {
+        teamId: id,
+        userId: { not: team.leaderId }
+      },
+      select: { userId: true }
+    })
+
     // Kick all other members (delete their TeamMember records, keep only the leader's)
     await prisma.teamMember.deleteMany({
       where: {
@@ -163,6 +172,18 @@ export const deleteTeam = async (req: AuthRequest, res: Response): Promise<void>
         userId: { not: team.leaderId }
       }
     })
+
+    // Create notifications for kicked members
+    for (const member of membersToNotify) {
+      await prisma.notification.create({
+        data: {
+          userId: member.userId,
+          title: '📯 Nhóm đã giải tán',
+          content: `Trưởng nhóm đã giải tán hoặc lưu trữ nhóm "${team.name}". Bạn đã được rút khỏi nhóm.`,
+          link: '/dashboard'
+        }
+      })
+    }
 
     // Set team status to inactive
     const updated = await prisma.team.update({

@@ -2,6 +2,7 @@ import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { getGeminiModel } from '../utils/gemini'
+import { createNotification } from './notification.controller'
 
 // POST /api/weekly/submit
 export const submitReport = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -50,6 +51,26 @@ Hãy tóm tắt và cho lời khuyên ngắn gọn (khoảng 3-4 câu) bằng ti
         aiSummary
       }
     })
+
+    // Notify class lecturers
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      select: { name: true, classCode: true }
+    })
+    if (team && team.classCode) {
+      const lecturers = await prisma.user.findMany({
+        where: { classCode: team.classCode, role: 'manager' },
+        select: { id: true }
+      })
+      for (const lecturer of lecturers) {
+        await createNotification(
+          lecturer.id,
+          'Báo cáo tuần mới được nộp 📋',
+          `Nhóm "${team.name}" đã nộp báo cáo Tuần ${weekNumber}.`,
+          '/manager/teams'
+        )
+      }
+    }
 
     res.status(201).json({ success: true, data: report })
   } catch (err) {

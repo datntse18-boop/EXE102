@@ -304,17 +304,38 @@ export const addProjectComment = async (req: AuthRequest, res: Response): Promis
       }
     })
 
-    // Optional: Notify project/team leader
+    // Notify team members (and lecturer if appropriate)
     const proj = await prisma.project.findUnique({
       where: { id },
       include: { team: true }
     })
-    if (proj && proj.team.leaderId !== userId) {
-      await createNotification(
-        proj.team.leaderId,
-        'Bình luận mới trên dự án của bạn 💬',
-        `Người dùng ${req.user!.name} đã bình luận: "${content.substring(0, 30)}..."`,
-        `/project-showcase`
+    if (proj) {
+      const members = await prisma.teamMember.findMany({
+        where: { teamId: proj.teamId },
+        select: { userId: true }
+      })
+      const notifyUserIds = new Set<string>(members.map(m => m.userId))
+      notifyUserIds.add(proj.team.leaderId)
+      notifyUserIds.delete(userId) // Exclude the commenter
+
+      // If a student comments, notify the class lecturer
+      if (req.user!.role === 'member') {
+        const lecturers = await prisma.user.findMany({
+          where: { classCode: proj.team.classCode, role: 'manager' },
+          select: { id: true }
+        })
+        lecturers.forEach(l => notifyUserIds.add(l.id))
+      }
+
+      await Promise.all(
+        Array.from(notifyUserIds).map(targetUserId =>
+          createNotification(
+            targetUserId,
+            req.user!.role === 'manager' ? 'Giảng viên đã nhận xét dự án 🎓' : 'Bình luận mới trên dự án 💬',
+            `${req.user!.name}: "${content.substring(0, 35)}..."`,
+            `/project-showcase`
+          )
+        )
       )
     }
 

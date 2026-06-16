@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { createNotification } from './notification.controller'
 
 // Cập nhật điểm sức khỏe của nhóm liên quan đến dự án
 const updateTeamHealth = async (projectId: string): Promise<void> => {
@@ -93,6 +94,17 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
       include: { assignee: { select: { id: true, name: true, avatar: true } } },
     })
     await updateTeamHealth(projectId)
+
+    // Notify assignee if it's someone else
+    if (assignedTo !== req.user!.id) {
+      await createNotification(
+        assignedTo,
+        'Bạn được giao công việc mới 📋',
+        `Trưởng nhóm đã giao cho bạn công việc: "${title}"`,
+        '/workspace'
+      )
+    }
+
     res.status(201).json({ success: true, data: task })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
@@ -104,12 +116,44 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
   try {
     const { id } = req.params as { id: string }
     const { title, description, status, priority, assignedTo, dueDate } = req.body
+
+    const originalTask = await prisma.task.findUnique({
+      where: { id },
+      include: { project: { include: { team: true } } }
+    })
+
     const task = await prisma.task.update({
       where: { id },
       data: { title, description, status, priority, assignedTo, dueDate: dueDate ? new Date(dueDate) : undefined },
       include: { assignee: { select: { id: true, name: true, avatar: true } } },
     })
     await updateTeamHealth(task.projectId)
+
+    // Notify assignee or team leader on changes
+    if (originalTask) {
+      // 1. If assigned to a new person, notify them
+      if (assignedTo && assignedTo !== originalTask.assignedTo && assignedTo !== req.user!.id) {
+        await createNotification(
+          assignedTo,
+          'Bạn được giao công việc mới 📋',
+          `Bạn được giao công việc: "${task.title}"`,
+          '/workspace'
+        )
+      }
+      // 2. If status changes to completed, notify team leader
+      if (status === 'completed' && originalTask.status !== 'completed') {
+        const teamLeaderId = originalTask.project.team.leaderId
+        if (teamLeaderId && teamLeaderId !== req.user!.id) {
+          await createNotification(
+            teamLeaderId,
+            'Công việc nhóm hoàn thành 🏆',
+            `Thành viên ${req.user!.name} đã hoàn thành công việc: "${task.title}"`,
+            '/workspace'
+          )
+        }
+      }
+    }
+
     res.json({ success: true, data: task })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })
