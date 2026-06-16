@@ -65,7 +65,7 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
 // PATCH /api/payments/:id/confirm — Admin confirms payment → upgrade subscription
 export const confirmPayment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params
+    const id = req.params.id as string
 
     const payment = await prisma.payment.findUnique({ where: { id } })
     if (!payment) {
@@ -109,7 +109,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
 // PATCH /api/payments/:id/reject — Admin rejects payment
 export const rejectPayment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params
+    const id = req.params.id as string
     const { reason } = req.body
 
     const payment = await prisma.payment.findUnique({ where: { id } })
