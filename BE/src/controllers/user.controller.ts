@@ -102,6 +102,37 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
   }
 }
 
+// PATCH /api/users/:id/subscription — Admin and Leader (Dean) only
+export const updateUserSubscription = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params as { id: string }
+    const { subscription } = req.body
+
+    const validSubscriptions = ['free', 'premium', 'enterprise']
+    if (!subscription || !validSubscriptions.includes(subscription)) {
+      res.status(400).json({ success: false, message: 'Invalid subscription package name.' })
+      return
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id } })
+    if (!targetUser) {
+      res.status(404).json({ success: false, message: 'User not found' })
+      return
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { subscription: subscription as any },
+      select: { id: true, name: true, email: true, role: true, status: true, subscription: true },
+    })
+
+    res.json({ success: true, data: user })
+  } catch (err) {
+    console.error('Update Subscription Error:', err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
 // PATCH /api/users/profile — Self update
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

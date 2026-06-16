@@ -84,6 +84,18 @@ export default function UserManagement() {
     }
   }
 
+  const handleChangeSubscription = async (userId: string, newSubscription: string) => {
+    setUpdating(userId)
+    try {
+      await userService.updateSubscription(userId, newSubscription)
+      setUsers(users.map(u => u.id === userId ? { ...u, subscription: newSubscription } : u))
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Cập nhật gói dịch vụ thất bại.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   const handleDeleteUser = async (userId: string, name: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của ${name} không? Thao tác này sẽ xóa toàn bộ dữ liệu liên quan và không thể phục hồi!`)) {
       setUpdating(userId)
@@ -318,10 +330,23 @@ export default function UserManagement() {
                         </select>
                       )}
                     </td>
-                    <td className="p-3 text-sm capitalize">
-                      <span className={`px-2 py-1 rounded text-xs ${user.subscription === 'premium' ? 'bg-[#FFA64D] text-white' : user.subscription === 'enterprise' ? 'bg-[#FF6B00] text-white' : 'bg-gray-100'}`}>
-                        {user.subscription}
-                      </span>
+                    <td className="p-3">
+                      {user.role === 'admin' ? (
+                        <span className="px-2.5 py-1 text-xs font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
+                          Enterprise
+                        </span>
+                      ) : (
+                        <select
+                          value={user.subscription}
+                          onChange={e => handleChangeSubscription(user.id, e.target.value)}
+                          disabled={updating === user.id}
+                          className="border rounded px-2 py-1 text-sm capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-700 dark:text-gray-300 font-bold"
+                        >
+                          <option value="free">Free</option>
+                          <option value="premium">Premium</option>
+                          <option value="enterprise">Enterprise</option>
+                        </select>
+                      )}
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs ${user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

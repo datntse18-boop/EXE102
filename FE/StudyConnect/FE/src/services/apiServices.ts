@@ -50,6 +50,11 @@ export const userService = {
     return data.data
   },
 
+  updateSubscription: async (id: string, subscription: string) => {
+    const { data } = await api.patch(`/users/${id}/subscription`, { subscription })
+    return data.data
+  },
+
   toggleStatus: async (id: string) => {
     const { data } = await api.patch(`/users/${id}/status`)
     return data.data
