@@ -16,6 +16,7 @@ export default function TeamManagement() {
   // Users list to add
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([])
 
   const loadData = async () => {
     setLoading(true)
@@ -96,6 +97,38 @@ export default function TeamManagement() {
       setTeams(teams.map(t => t.id === selectedTeam.id ? updatedTeam : t))
     } catch (err: any) {
       alert(err.response?.data?.message || 'Không thể thêm thành viên')
+    }
+  }
+
+  const loadLeaveRequests = async (teamId: string) => {
+    try {
+      const data = await teamService.getLeaveRequests(teamId)
+      setLeaveRequests(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedTeam) {
+      loadLeaveRequests(selectedTeam.id)
+    }
+  }, [selectedTeam])
+
+  const handleResolveLeaveRequest = async (requestId: string, action: 'approve' | 'reject') => {
+    if (!selectedTeam) return
+    const actionLabel = action === 'approve' ? 'đồng ý cho' : 'từ chối'
+    if (window.confirm(`Bạn có chắc chắn muốn ${actionLabel} thành viên này rời khỏi nhóm?`)) {
+      try {
+        await teamService.resolveLeaveRequest(selectedTeam.id, requestId, action)
+        alert('Xử lý yêu cầu thành công!')
+        const updatedTeam = await teamService.getTeamById(selectedTeam.id)
+        setSelectedTeam(updatedTeam)
+        setTeams(teams.map(t => t.id === selectedTeam.id ? updatedTeam : t))
+        loadLeaveRequests(selectedTeam.id)
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Không thể xử lý yêu cầu.')
+      }
     }
   }
 
@@ -207,6 +240,43 @@ export default function TeamManagement() {
                   ))}
                 </div>
               </Card>
+
+              {/* Leave Requests Card */}
+              {leaveRequests.length > 0 && (
+                <Card className="border-t-4 border-red-500 bg-red-50/5">
+                  <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4 pb-2 border-b border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400 flex items-center gap-2">
+                    <span>📩</span> Yêu cầu xin rời nhóm đang chờ duyệt
+                  </h3>
+                  <div className="divide-y divide-red-100 dark:divide-red-950/20">
+                    {leaveRequests.map((req: any) => (
+                      <div key={req.id} className="flex justify-between items-center py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{req.user?.avatar || '👤'}</span>
+                          <div>
+                            <p className="font-bold text-gray-805 dark:text-gray-200 text-sm">{req.user?.name}</p>
+                            <p className="text-xs text-gray-500">{req.user?.email}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Yêu cầu lúc: {new Date(req.createdAt).toLocaleString('vi-VN')}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleResolveLeaveRequest(req.id, 'approve')}
+                            className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-xl transition shadow-sm"
+                          >
+                            Đồng ý
+                          </button>
+                          <button
+                            onClick={() => handleResolveLeaveRequest(req.id, 'reject')}
+                            className="text-xs border border-red-200 dark:border-red-900/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 px-3 py-1.5 rounded-xl transition"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </div>
 
             {/* Right column: Add new members */}

@@ -5,7 +5,8 @@ import FinancialHub from '../member/FinancialHub'
 import SlideOutline from '../member/SlideOutline'
 import WeeklyCheckin from '../member/WeeklyCheckin'
 import Analytics from '../member/Analytics'
-import { LayoutGrid, ClipboardList, TrendingUp, FileText, CalendarDays, FilePieChart } from 'lucide-react'
+import StartupCertificate from '../member/StartupCertificate'
+import { LayoutGrid, ClipboardList, TrendingUp, FileText, CalendarDays, FilePieChart, Award } from 'lucide-react'
 
 export default function StartupToolsHub() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,6 +19,7 @@ export default function StartupToolsHub() {
     { id: 'slide', label: 'Dàn ý Slide AI', icon: <FileText size={14} />, component: <SlideOutline /> },
     { id: 'weekly', label: 'Báo cáo tuần', icon: <CalendarDays size={14} />, component: <WeeklyCheckin /> },
     { id: 'analytics', label: 'Phân tích tiến độ', icon: <FilePieChart size={14} />, component: <Analytics /> },
+    { id: 'certificate', label: 'Chứng nhận Khởi nghiệp', icon: <Award size={14} />, component: <StartupCertificate /> },
   ]
 
   const activeTabObj = tabs.find(t => t.id === activeTab) || tabs[0]

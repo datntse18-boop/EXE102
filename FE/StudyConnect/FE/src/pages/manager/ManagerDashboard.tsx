@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Card from '../../components/cards/Card'
-import { teamService, reportService, aiService } from '../../services/apiServices'
+import { teamService, reportService, aiService, projectService } from '../../services/apiServices'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
   Users, 
@@ -72,16 +72,30 @@ export default function ManagerDashboard() {
     }
   }
 
-  // Handle mock feedback submit
-  const handleSendFeedback = (e: React.FormEvent) => {
+  // Handle feedback submit to database project comments
+  const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!feedbackText) return
+    if (!feedbackText || !inspectingTeamId) return
+
+    const selectedTeam = teams.find(t => t.id === inspectingTeamId)
+    const activeProject = selectedTeam?.projects?.[0]
+    
+    if (!activeProject) {
+      alert('Nhóm này hiện chưa có dự án nào được khởi tạo để nhận phản hồi!')
+      return
+    }
+
     setSendingFeedback(true)
-    setTimeout(() => {
-      alert('Gửi phản hồi hướng dẫn thành công đến nhóm!')
+    try {
+      await projectService.addComment(activeProject.id, feedbackText)
+      alert('Gửi phản hồi hướng dẫn thành công và đã lưu vào dự án!')
       setFeedbackText('')
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.message || 'Không thể gửi phản hồi. Vui lòng thử lại.')
+    } finally {
       setSendingFeedback(false)
-    }, 800)
+    }
   }
 
   const StatBox = ({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) => (

@@ -30,6 +30,8 @@ import JobBoard from '../pages/member/JobBoard'
 import CustomerValidation from '../pages/member/CustomerValidation'
 import FinancialHub from '../pages/member/FinancialHub'
 import SlideOutline from '../pages/member/SlideOutline'
+import PaymentHistory from '../pages/member/PaymentHistory'
+import StartupCertificate from '../pages/member/StartupCertificate'
 import IdeationHub from '../pages/hubs/IdeationHub'
 import StartupToolsHub from '../pages/hubs/StartupToolsHub'
 import EvaluationHub from '../pages/hubs/EvaluationHub'
@@ -113,6 +115,8 @@ export default function AppRoutes() {
         <Route path="customer-validation" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CustomerValidation /></ProtectedRoute>} />
         <Route path="financial-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><FinancialHub /></ProtectedRoute>} />
         <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><SlideOutline /></ProtectedRoute>} />
+        <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PaymentHistory /></ProtectedRoute>} />
+        <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupCertificate /></ProtectedRoute>} />
 
         <Route path="team-management" element={<ProtectedRoute allowed={['leader','manager','admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>

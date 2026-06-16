@@ -237,6 +237,17 @@ export const reviewApplication = async (req: AuthRequest, res: Response): Promis
       })
 
       if (!existingMember) {
+        // Check team size limit (max 6 members, bypass for enterprise/corporate)
+        if (team.subscription !== 'enterprise') {
+          const currentMemberCount = await prisma.teamMember.count({
+            where: { teamId: team.id }
+          })
+          if (currentMemberCount >= 6) {
+            res.status(400).json({ success: false, message: 'Nhóm đã đạt số lượng tối đa 6 thành viên (1 nhóm trưởng và 5 thành viên).' })
+            return
+          }
+        }
+
         await prisma.teamMember.create({
           data: {
             teamId: team.id,

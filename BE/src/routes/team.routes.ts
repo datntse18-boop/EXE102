@@ -8,7 +8,10 @@ import {
   addMember, 
   removeMember, 
   getTeamHealth,
-  joinClass
+  joinClass,
+  requestLeaveTeam,
+  getLeaveRequests,
+  resolveLeaveRequest
 } from '../controllers/team.controller'
 import { authenticate, authorize } from '../middleware/auth.middleware'
 
@@ -25,5 +28,10 @@ router.delete('/:id', authorize('admin', 'manager', 'leader', 'member'), deleteT
 router.get('/:id/health', getTeamHealth)
 router.post('/:id/members', authorize('admin', 'manager', 'leader', 'member'), addMember)
 router.delete('/:id/members/:userId', authorize('admin', 'manager', 'leader', 'member'), removeMember)
+
+// Leave group requests
+router.post('/:id/leave-request', requestLeaveTeam)
+router.get('/:id/leave-requests', getLeaveRequests)
+router.post('/:id/leave-requests/:requestId/resolve', resolveLeaveRequest)
 
 export default router

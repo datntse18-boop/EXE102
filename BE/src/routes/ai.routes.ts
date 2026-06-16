@@ -1,17 +1,17 @@
 import { Router } from 'express'
 import { generateIdea, teamMatching, analyzeProgress, analyzePitchDeck, virtualDemoDay, generateSlides, saveGeminiKey } from '../controllers/ai.controller'
-import { authenticate } from '../middleware/auth.middleware'
+import { authenticate, checkAiLimit } from '../middleware/auth.middleware'
 
 const router = Router()
 
 router.use(authenticate)
 
-router.post('/idea-generator', generateIdea)
-router.post('/team-matching', teamMatching)
-router.post('/analyze-progress', analyzeProgress)
-router.post('/pitch-deck-advisor', analyzePitchDeck)
-router.post('/demo-day', virtualDemoDay)
-router.post('/projects/:projectId/generate-slides', generateSlides)
+router.post('/idea-generator', checkAiLimit, generateIdea)
+router.post('/team-matching', checkAiLimit, teamMatching)
+router.post('/analyze-progress', checkAiLimit, analyzeProgress)
+router.post('/pitch-deck-advisor', checkAiLimit, analyzePitchDeck)
+router.post('/demo-day', checkAiLimit, virtualDemoDay)
+router.post('/projects/:projectId/generate-slides', checkAiLimit, generateSlides)
 router.post('/save-key', saveGeminiKey)
 
 export default router

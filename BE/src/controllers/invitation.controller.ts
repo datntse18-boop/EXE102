@@ -100,11 +100,26 @@ export const respondToInvitation = async (req: AuthRequest, res: Response): Prom
         where: { teamId_userId: { teamId: invitation.teamId, userId: req.user!.id } },
       })
       if (!existing) {
+        const team = await prisma.team.findUnique({ where: { id: invitation.teamId } })
+        if (!team) {
+          res.status(404).json({ success: false, message: 'Team not found' })
+          return
+        }
+        // Check team size limit (max 6 members, bypass for enterprise/corporate)
+        if (team.subscription !== 'enterprise') {
+          const currentMemberCount = await prisma.teamMember.count({
+            where: { teamId: invitation.teamId }
+          })
+          if (currentMemberCount >= 6) {
+            res.status(400).json({ success: false, message: 'Nhóm đã đạt số lượng tối đa 6 thành viên (1 nhóm trưởng và 5 thành viên).' })
+            return
+          }
+        }
+
         await prisma.teamMember.create({ data: { teamId: invitation.teamId, userId: req.user!.id } })
         
         // Also inherit the team's classCode if any
-        const team = await prisma.team.findUnique({ where: { id: invitation.teamId } })
-        if (team?.classCode) {
+        if (team.classCode) {
           await prisma.user.update({
             where: { id: req.user!.id },
             data: { classCode: team.classCode }

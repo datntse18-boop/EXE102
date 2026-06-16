@@ -1,19 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Check, CheckCircle, CreditCard, ArrowRight, Loader2,
   Download, Printer, Sparkles, Percent, ShieldCheck,
-  Building2, Copy, AlertCircle, Clock, X, Crown, Zap
+  Building2, Copy, AlertCircle, Clock, X, Crown, Zap, Upload, Image, Sliders
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { paymentService, authService } from '../../services/apiServices'
+import { paymentService, authService, teamService } from '../../services/apiServices'
 
-// ─── Bank Config (thay bằng thông tin thật của bạn) ───
-const MERCHANT = {
-  bankId: 'MB',           // MB Bank
-  accountNo: '0987654321',
-  accountName: 'STUDYCONNECT',
-  bankName: 'MB Bank',
-}
+// ─── Bank Config ───
+const SUPPORTED_BANKS = [
+  { id: 'MB', name: 'MB Bank', no: '0949989214', accountName: 'NGUYEN TIEN DAT', bankName: 'MB Bank' },
+]
 
 const PLANS = [
   {
@@ -25,7 +23,7 @@ const PLANS = [
     desc: 'Dành cho sinh viên học tập cơ bản',
     color: 'gray',
     features: [
-      { label: 'Tham gia / Tạo 1 nhóm dự án', ok: true },
+      { label: 'Tham gia / Tạo tối đa 3 nhóm', ok: true },
       { label: 'Workspace & Kanban Task cơ bản', ok: true },
       { label: 'AI phân tích ý tưởng (3 lần/ngày)', ok: true },
       { label: 'AI Startup Mentor chatbot', ok: false },
@@ -38,29 +36,48 @@ const PLANS = [
   {
     id: 'premium',
     name: 'Gói Pro Premium',
-    price: 199000,
-    priceLabel: '199.000 VNĐ',
-    period: '/ tháng',
-    desc: 'Dành cho nhóm startup EXE triển vọng',
+    price: 699000,
+    priceLabel: '699.000 VNĐ',
+    period: '/ tháng / cá nhân',
+    desc: 'Dành cho cá nhân muốn bứt phá',
     color: 'orange',
-    popular: true,
     features: [
-      { label: 'Tất cả tính năng Standard', ok: true },
+      { label: 'Mở khóa toàn bộ AI cá nhân', ok: true },
       { label: 'AI phân tích ý tưởng không giới hạn', ok: true },
       { label: 'AI Startup Mentor chatbot', ok: true },
       { label: 'Virtual Demo Day AI', ok: true },
       { label: 'OKR nâng cao & Analytics', ok: true },
       { label: 'Ưu tiên đăng ký Mentor 24/7', ok: true },
     ],
-    cta: 'Nâng Cấp Ngay',
+    cta: 'Nâng Cấp Cá Nhân',
+    ctaDisabled: false,
+  },
+  {
+    id: 'team_premium',
+    name: 'Gói Team Premium 💎',
+    price: 3149000,
+    priceLabel: '3.149.000 VNĐ',
+    originalPriceLabel: '4.194.000 VNĐ',
+    period: '/ tháng / nhóm (tối đa 6 người)',
+    desc: 'Bản quyền Premium cho cả nhóm dự án',
+    color: 'orange',
+    popular: true,
+    features: [
+      { label: 'Tất cả quyền lợi Pro Premium', ok: true },
+      { label: 'Áp dụng cho cả nhóm (Tối đa 6 người)', ok: true },
+      { label: 'Trưởng nhóm thanh toán & Quản lý', ok: true },
+      { label: 'Tiết kiệm 25% so với mua tài khoản lẻ', ok: true },
+      { label: 'Mở khóa Startup Certificate cho cả nhóm', ok: true },
+    ],
+    cta: 'Nâng Cấp Cho Nhóm',
     ctaDisabled: false,
   },
   {
     id: 'enterprise',
     name: 'Gói Enterprise',
-    price: 499000,
-    priceLabel: '499.000 VNĐ',
-    period: '/ tháng',
+    price: 899000,
+    priceLabel: '899.000 VNĐ',
+    period: '/ tháng / người',
     desc: 'Dành cho Nhà trường / Ban quản lý',
     color: 'purple',
     features: [
@@ -72,6 +89,25 @@ const PLANS = [
       { label: 'SLA hỗ trợ ưu tiên', ok: true },
     ],
     cta: 'Liên hệ hỗ trợ',
+    ctaDisabled: false,
+  },
+  {
+    id: 'corporate',
+    name: 'Gói Corporate 🏢',
+    price: 0,
+    priceLabel: 'Liên hệ',
+    period: '/ doanh nghiệp lớn',
+    desc: 'Giải pháp riêng cho doanh nghiệp',
+    color: 'purple',
+    features: [
+      { label: 'Tất cả tính năng Enterprise', ok: true },
+      { label: 'Không giới hạn số tài khoản thành viên', ok: true },
+      { label: 'Tùy chỉnh AI Model theo yêu cầu', ok: true },
+      { label: 'Hỗ trợ kỹ thuật SLA 24/7 trực tiếp', ok: true },
+      { label: 'Triển khai Private Cloud / On-Premise', ok: true },
+      { label: 'Hợp đồng thương mại & VAT đầy đủ', ok: true },
+    ],
+    cta: 'Liên Hệ Ngay',
     ctaDisabled: false,
   },
 ]
@@ -87,10 +123,196 @@ function formatVnd(amount: number) {
   return amount.toLocaleString('vi-VN') + ' VNĐ'
 }
 
+// ─── Comparison Data ───
+const COMPARISON_CATEGORIES = [
+  {
+    name: "AI & Công cụ Ý tưởng (Ideation AI)",
+    features: [
+      {
+        name: "Phân tích & gợi ý ý tưởng AI",
+        desc: "Hỗ trợ lên ý tưởng dự án khởi nghiệp bằng AI dựa trên lĩnh vực và từ khóa",
+        free: "3 lần/ngày",
+        premium: "Không giới hạn",
+        team: "Không giới hạn (Cả nhóm)",
+        enterprise: "Không giới hạn",
+        corporate: "Model AI tùy chỉnh"
+      },
+      {
+        name: "AI ghép nhóm & tìm đồng đội",
+        desc: "Đề xuất ghép nhóm tự động theo kỹ năng và định hướng dự án",
+        free: "3 lần/ngày",
+        premium: "Không giới hạn",
+        team: "Không giới hạn (Cả nhóm)",
+        enterprise: "Không giới hạn",
+        corporate: "Không giới hạn"
+      }
+    ]
+  },
+  {
+    name: "Công cụ Khởi nghiệp nâng cao (Advanced Startup Tools)",
+    features: [
+      {
+        name: "Mô hình Canvas AI (Lean Canvas)",
+        desc: "Phân tích và tự động điền các ô trong mô hình Canvas kinh doanh",
+        free: "Không hỗ trợ",
+        premium: "Đầy đủ tính năng",
+        team: "Đầy đủ tính năng (Cả nhóm)",
+        enterprise: "Đầy đủ tính năng",
+        corporate: "Thiết kế tùy chỉnh"
+      },
+      {
+        name: "Dự toán tài chính & Điểm hòa vốn",
+        desc: "Công cụ dự báo tài chính, doanh thu chi phí và vẽ biểu đồ hòa vốn tự động",
+        free: "Không hỗ trợ",
+        premium: "Đầy đủ tính năng",
+        team: "Đầy đủ tính năng (Cả nhóm)",
+        enterprise: "Đầy đủ tính năng",
+        corporate: "Tùy biến báo cáo riêng"
+      },
+      {
+        name: "Tạo dàn ý Slide (Slide Outline) bằng AI",
+        desc: "Tự động thiết lập cấu trúc slide thuyết trình dự án chuẩn hóa",
+        free: "Không hỗ trợ",
+        premium: "Đầy đủ tính năng",
+        team: "Đầy đủ tính năng (Cả nhóm)",
+        enterprise: "Đầy đủ tính năng",
+        corporate: "Mẫu slide thương hiệu"
+      },
+      {
+        name: "AI Cố vấn Pitching & Virtual Demo Day",
+        desc: "Giả lập hỏi đáp phản biện với ban giám khảo ảo cho buổi Demo Day",
+        free: "Không hỗ trợ",
+        premium: "Đầy đủ tính năng",
+        team: "Đầy đủ tính năng (Cả nhóm)",
+        enterprise: "Đầy đủ tính năng",
+        corporate: "Cố vấn AI riêng biệt"
+      }
+    ]
+  },
+  {
+    name: "Lớp học & Hướng nghiệp (Learning & Mentorship)",
+    features: [
+      {
+        name: "Tài liệu & Syllabus khóa học",
+        desc: "Xem khung chương trình giảng dạy, tài liệu hướng dẫn và video học tập",
+        free: "Có",
+        premium: "Có",
+        team: "Có",
+        enterprise: "Có",
+        corporate: "Cấu hình Syllabus riêng"
+      },
+      {
+        name: "Đăng ký lịch hẹn Mentor chuyên gia",
+        desc: "Đặt lịch hẹn cố vấn 1-1 trực tiếp với các Mentor trên hệ thống",
+        free: "Hàng chờ thường",
+        premium: "Ưu tiên 24/7",
+        team: "Ưu tiên 24/7 (Cả nhóm)",
+        enterprise: "Mentor riêng của trường",
+        corporate: "SLA Mentor VIP riêng"
+      },
+      {
+        name: "Workspace & Kanban Task quản lý",
+        desc: "Không gian làm việc chung của nhóm, phân công và kéo thả công việc",
+        free: "Cơ bản",
+        premium: "Nâng cao (Đầy đủ)",
+        team: "Nâng cao (Đầy đủ)",
+        enterprise: "Nâng cao (Đầy đủ)",
+        corporate: "Tùy biến quy trình"
+      },
+      {
+        name: "Đánh giá đồng đội (Peer Evaluation)",
+        desc: "Bảng khảo sát, đánh giá chéo năng lực làm việc nhóm định kỳ",
+        free: "Có",
+        premium: "Có",
+        team: "Có",
+        enterprise: "Có",
+        corporate: "Có"
+      },
+      {
+        name: "Chứng chỉ Khởi nghiệp độc quyền",
+        desc: "Cấp chứng nhận hoàn thành chương trình ươm tạo dự án StudyConnect",
+        free: "Không hỗ trợ",
+        premium: "Có (Cá nhân)",
+        team: "Có (Cả nhóm)",
+        enterprise: "Có (Trường cấp phát)",
+        corporate: "Chứng nhận liên kết"
+      }
+    ]
+  },
+  {
+    name: "Giới hạn & Quản trị (Limits & Admin Tools)",
+    features: [
+      {
+        name: "Số nhóm tối đa được tạo làm Leader",
+        desc: "Hạn chế số nhóm dự án do một người làm Leader để tránh tạo tràn lan",
+        free: "Tối đa 3 nhóm",
+        premium: "Tối đa 3 nhóm",
+        team: "Tối đa 3 nhóm",
+        enterprise: "Không giới hạn",
+        corporate: "Không giới hạn"
+      },
+      {
+        name: "Số thành viên tối đa mỗi nhóm",
+        desc: "Số lượng thành viên tối đa được phép tham gia một nhóm dự án",
+        free: "Tối đa 6 thành viên",
+        premium: "Tối đa 6 thành viên",
+        team: "Tối đa 6 thành viên",
+        enterprise: "Tối đa 6 thành viên",
+        corporate: "Không giới hạn"
+      },
+      {
+        name: "Thống kê tiến độ & OKR nhóm",
+        desc: "Xem biểu đồ đóng góp của thành viên, theo dõi mục tiêu OKR nhóm",
+        free: "Không hỗ trợ",
+        premium: "Nâng cao",
+        team: "Nâng cao (Cả nhóm)",
+        enterprise: "Bản đồ nhiệt & Báo cáo",
+        corporate: "Dashboard riêng biệt"
+      },
+      {
+        name: "Quản lý lớp học & Báo cáo hội đồng",
+        desc: "Công cụ dành cho Giảng viên / Quản lý theo dõi điểm số, đánh giá và xuất báo cáo",
+        free: "Không hỗ trợ",
+        premium: "Không hỗ trợ",
+        team: "Không hỗ trợ",
+        enterprise: "Có (GV/Manager)",
+        corporate: "Có (Phân quyền sâu)"
+      }
+    ]
+  }
+]
+
+const renderComparisonCell = (value: string) => {
+  if (value === "Có" || value === "Có (Cá nhân)" || value === "Có (Cả nhóm)" || value === "Có (Trường cấp phát)" || value === "Chứng nhận liên kết" || value === "Đầy đủ tính năng" || value === "Đầy đủ tính năng (Cả nhóm)") {
+    return (
+      <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-extrabold bg-green-50 dark:bg-green-950/20 px-2 py-1 rounded-full text-[10px]">
+        <Check className="w-3.5 h-3.5 shrink-0" /> {value}
+      </span>
+    )
+  }
+  if (value === "Không hỗ trợ" || value === "Chỉ xem mẫu") {
+    return (
+      <span className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-650 line-through bg-gray-50 dark:bg-gray-950/10 px-2 py-1 rounded-full text-[10px]">
+        <X className="w-3 h-3 shrink-0" /> {value}
+      </span>
+    )
+  }
+  if (value.includes("Vô hạn") || value.includes("Không giới hạn")) {
+    return (
+      <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 font-black bg-orange-50 dark:bg-orange-950/20 px-2 py-1 rounded-full text-[10px]">
+        <Sparkles className="w-3 h-3 shrink-0 text-orange-500 animate-pulse" /> {value}
+      </span>
+    )
+  }
+  return <span className="font-bold text-gray-700 dark:text-gray-300">{value}</span>
+}
+
 export default function Pricing() {
   const { user, updateUserData } = useAuth()
+  const navigate = useNavigate()
   const [showModal, setShowModal] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[1] | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<any | null>(null)
   const [step, setStep] = useState<'checkout' | 'pending' | 'success'>('checkout')
   const [promoCode, setPromoCode] = useState('')
   const [discountApplied, setDiscountApplied] = useState(false)
@@ -99,7 +321,11 @@ export default function Pricing() {
   const [submitting, setSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [paymentId, setPaymentId] = useState('')
+  const [selectedBank, setSelectedBank] = useState(SUPPORTED_BANKS[0])
+  const [myTeams, setMyTeams] = useState<any[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState('')
   const promoRef = useRef<HTMLInputElement>(null)
+  const [showComparisonModal, setShowComparisonModal] = useState(false)
 
   const finalPrice = selectedPlan
     ? discountApplied
@@ -107,10 +333,10 @@ export default function Pricing() {
       : selectedPlan.price
     : 0
 
-  // VietQR URL (real QR code, no API key needed)
+  // VietQR URL (real QR code, dynamically generated according to selectedBank)
   const qrUrl = selectedPlan
-    ? `https://img.vietqr.io/image/${MERCHANT.bankId}-${MERCHANT.accountNo}-compact2.png` +
-      `?amount=${finalPrice}&addInfo=${txId}&accountName=${encodeURIComponent(MERCHANT.accountName)}`
+    ? `https://img.vietqr.io/image/${selectedBank.id}-${selectedBank.no}-compact2.png` +
+      `?amount=${finalPrice}&addInfo=${txId}&accountName=${encodeURIComponent(selectedBank.accountName)}`
     : ''
 
   useEffect(() => {
@@ -119,14 +345,52 @@ export default function Pricing() {
     return () => clearInterval(t)
   }, [showModal, step, countdown])
 
+  // Automatic Polling: Check if payment is confirmed by checking user profile or team status
+  useEffect(() => {
+    if (!showModal || step !== 'pending' || !selectedPlan) return
+
+    const interval = setInterval(async () => {
+      try {
+        if (selectedPlan.id === 'team_premium') {
+          const teamsRes = await teamService.getTeams()
+          const upgradedTeam = teamsRes.data?.find((t: any) => t.id === selectedTeamId)
+          if (upgradedTeam && upgradedTeam.subscription === 'premium') {
+            clearInterval(interval)
+            setStep('success')
+          }
+        } else {
+          const profile = await authService.me()
+          if (profile && profile.subscription === selectedPlan.id) {
+            clearInterval(interval)
+            // Update global auth user context
+            updateUserData({ ...user, subscription: profile.subscription })
+            setStep('success')
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err)
+      }
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [showModal, step, selectedPlan, selectedTeamId, user])
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, '0')
     return `${m}:${(s % 60).toString().padStart(2, '0')}`
   }
 
-  const handleOpen = (plan: typeof PLANS[1]) => {
+  const handleOpen = async (plan: any) => {
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
+    if (plan.id === 'corporate') {
+      window.open('mailto:partner@studyconnect.vn?subject=Corporate Partnership Inquiry', '_blank')
+      return
+    }
     if (plan.id === 'enterprise') {
-      window.open('mailto:support@studyconnect.vn?subject=Enterprise Plan', '_blank')
+      window.open('mailto:support@studyconnect.vn?subject=Enterprise Plan Inquiry', '_blank')
       return
     }
     setSelectedPlan(plan)
@@ -134,7 +398,23 @@ export default function Pricing() {
     setPromoCode('')
     setDiscountApplied(false)
     setCountdown(900)
+    setSelectedBank(SUPPORTED_BANKS[0])
+    setSelectedTeamId('')
+    setMyTeams([])
     setShowModal(true)
+
+    if (plan.id === 'team_premium') {
+      try {
+        const teamsRes = await teamService.getTeams()
+        const ledTeams = teamsRes.data?.filter((t: any) => t.leaderId === user?.id) || []
+        setMyTeams(ledTeams)
+        if (ledTeams.length > 0) {
+          setSelectedTeamId(ledTeams[0].id)
+        }
+      } catch (err) {
+        console.error('Failed to load teams:', err)
+      }
+    }
   }
 
   const applyPromo = () => {
@@ -154,11 +434,17 @@ export default function Pricing() {
   const handleSubmitPayment = async () => {
     setSubmitting(true)
     try {
+      const planToSubmit = selectedPlan!.id === 'team_premium' ? 'premium' : selectedPlan!.id
+      const teamIdToSubmit = selectedPlan!.id === 'team_premium' ? selectedTeamId : undefined
+
       const res = await paymentService.createPayment(
-        selectedPlan!.id,
+        planToSubmit as any,
         txId,
         discountApplied ? 'STUDYCONNECT30' : undefined,
-        finalPrice
+        finalPrice,
+        undefined, // no evidence file needed
+        selectedBank.id,
+        teamIdToSubmit
       )
       setPaymentId(res.id || '')
       setStep('pending')
@@ -180,9 +466,9 @@ Email        : ${user?.email || 'N/A'}
 ------------------------------------------------
 Dịch vụ      : StudyConnect ${selectedPlan?.name}
 Số tiền      : ${formatVnd(finalPrice)}
-Ngân hàng    : ${MERCHANT.bankName}
-Số TK        : ${MERCHANT.accountNo}
-Chủ TK       : ${MERCHANT.accountName}
+Ngân hàng    : ${selectedBank.bankName}
+Số TK        : ${selectedBank.no}
+Chủ TK       : ${selectedBank.accountName}
 Nội dung CK  : ${txId}
 ------------------------------------------------
 Trạng thái   : CHỜ XÁC NHẬN
@@ -226,12 +512,23 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
         </div>
       </div>
 
+      {/* Comparison Toggle Button */}
+      <div className="text-center pt-2">
+        <button
+          onClick={() => setShowComparisonModal(true)}
+          className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-orange-500/10 to-[#FF6B00]/10 hover:from-orange-500/20 hover:to-[#FF6B00]/20 border border-orange-500/30 hover:border-orange-500/50 text-[#FF6B00] dark:text-orange-400 text-xs font-black rounded-full transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0"
+        >
+          <Sliders className="w-4 h-4 text-orange-500" />
+          So sánh chi tiết quyền lợi & tính năng các gói
+        </button>
+      </div>
+
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
         {PLANS.map(plan => {
-          const isCurrentPlan = plan.id === currentPlan || (plan.id === 'free' && currentPlan === 'free')
-          const isUpgraded = plan.id !== 'free' && currentPlan !== 'free' &&
-            (currentPlan === plan.id || (currentPlan === 'enterprise' && plan.id === 'premium'))
+          const isCurrentPlan = plan.id === 'team_premium' ? false : (plan.id === currentPlan || (plan.id === 'free' && currentPlan === 'free'))
+          const isUpgraded = plan.id === 'team_premium' ? false : (plan.id !== 'free' && currentPlan !== 'free' &&
+            (currentPlan === plan.id || (currentPlan === 'enterprise' && plan.id === 'premium')))
 
           return (
             <div
@@ -258,11 +555,18 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
               <div>
                 <h3 className="text-base font-black text-gray-800 dark:text-white">{plan.name}</h3>
                 <p className="text-[11px] text-gray-400 mt-1">{plan.desc}</p>
-                <div className="my-5">
-                  <span className={`text-3xl font-black ${plan.popular ? 'text-[#FF6B00]' : 'text-gray-800 dark:text-white'}`}>
-                    {plan.priceLabel}
-                  </span>
-                  <span className="text-xs text-gray-400 font-bold ml-1">{plan.period}</span>
+                <div className="my-5 flex flex-col gap-0.5">
+                  {plan.originalPriceLabel && (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold line-through ml-0.5">
+                      {plan.originalPriceLabel}
+                    </span>
+                  )}
+                  <div>
+                    <span className={`text-3xl font-black ${plan.popular ? 'text-[#FF6B00]' : 'text-gray-800 dark:text-white'}`}>
+                      {plan.priceLabel}
+                    </span>
+                    <span className="text-xs text-gray-400 font-bold ml-1">{plan.period}</span>
+                  </div>
                 </div>
                 <ul className="space-y-3 border-t dark:border-gray-800 pt-4">
                   {plan.features.map((f, i) => (
@@ -377,6 +681,31 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   </p>
                 )}
 
+                {/* Team selection (if team plan) */}
+                {selectedPlan.id === 'team_premium' && (
+                  <div className="space-y-2 text-left bg-gray-50 dark:bg-[#1C1C28]/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-wider">
+                      Chọn nhóm dự án muốn nâng cấp
+                    </label>
+                    {myTeams.length > 0 ? (
+                      <select
+                        value={selectedTeamId}
+                        onChange={(e) => setSelectedTeamId(e.target.value)}
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-xs bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white focus:outline-none focus:border-[#FF6B00]"
+                      >
+                        {myTeams.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.members?.length || 0}/6 thành viên)</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-red-500 dark:text-red-400 text-xs font-bold leading-relaxed space-y-1">
+                        <p className="flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Bạn không phải là Trưởng nhóm của nhóm dự án nào.</p>
+                        <p className="text-[10px] text-gray-500 font-normal">Chỉ Trưởng nhóm mới có quyền nâng cấp gói cho nhóm. Bạn hãy liên hệ Trưởng nhóm của mình thực hiện thanh toán này!</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Real VietQR */}
                 <div className="bg-gray-50 dark:bg-[#0B0B0F] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 flex flex-col items-center gap-4">
                   <span className="text-[10px] font-black text-[#FF6B00] bg-orange-100 dark:bg-orange-950/50 px-3 py-1 rounded-full uppercase tracking-wider">
@@ -395,22 +724,45 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     />
                   </div>
 
-                  {/* Bank info */}
+                  {/* Bank info direct */}
                   <div className="w-full space-y-2 text-xs">
-                    <div className="flex items-center justify-between bg-white dark:bg-[#1C1C28] border border-gray-100 dark:border-gray-700 rounded-xl px-3.5 py-2.5">
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                        <Building2 className="w-3.5 h-3.5 text-[#FF6B00]" />
-                        <span>{MERCHANT.bankName} – {MERCHANT.accountNo}</span>
+                    <div className="bg-white dark:bg-[#1C1C28] border border-gray-100 dark:border-gray-700 rounded-xl p-3.5 space-y-2.5">
+                      <div className="flex justify-between items-center text-[10px] uppercase font-black text-gray-400">
+                        <span>Thông tin chuyển khoản</span>
+                        <span className="text-[#FF6B00] font-bold">MB Bank</span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between bg-white dark:bg-[#1C1C28] border border-gray-100 dark:border-gray-700 rounded-xl px-3.5 py-2.5">
-                      <div className="flex items-center gap-2">
+                      
+                      <div className="flex justify-between items-center py-0.5">
+                        <span className="text-gray-500 dark:text-gray-400">Chủ tài khoản:</span>
+                        <span className="font-bold text-gray-800 dark:text-white">{selectedBank.accountName}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center py-0.5 border-t border-dashed border-gray-100 dark:border-gray-800">
+                        <span className="text-gray-500 dark:text-gray-400">Số tài khoản:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-gray-800 dark:text-white">{selectedBank.no}</span>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedBank.no);
+                              alert('Đã sao chép số tài khoản!');
+                            }}
+                            className="text-gray-400 hover:text-[#FF6B00] transition"
+                            title="Sao chép số tài khoản"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center py-0.5 border-t border-dashed border-gray-100 dark:border-gray-800">
                         <span className="text-gray-500 dark:text-gray-400">Nội dung CK:</span>
-                        <span className="font-mono font-black text-[#FF6B00]">{txId}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-black text-[#FF6B00]">{txId}</span>
+                          <button onClick={copyTxId} className="text-gray-400 hover:text-[#FF6B00] transition" title="Sao chép nội dung">
+                            {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                      <button onClick={copyTxId} className="text-gray-400 hover:text-[#FF6B00] transition">
-                        {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                      </button>
                     </div>
                   </div>
 
@@ -431,22 +783,22 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                 <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/20 rounded-xl p-4 text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
                   <p className="font-bold text-blue-700 dark:text-blue-400 mb-2">📋 Hướng dẫn thanh toán:</p>
                   <p>1. Mở app ngân hàng → Quét QR hoặc chuyển khoản thủ công</p>
-                  <p>2. Nhập đúng nội dung chuyển khoản: <strong className="text-[#FF6B00]">{txId}</strong></p>
-                  <p>3. Sau khi chuyển, nhấn <strong>"Đã chuyển khoản"</strong> bên dưới</p>
-                  <p>4. Admin xác nhận trong vòng <strong>24 giờ</strong> và tài khoản tự động nâng cấp</p>
+                  <p>2. Nhập đúng nội dung chuyển khoản: <strong className="text-[#FF6B00]">{txId}</strong> (rất quan trọng)</p>
+                  <p>3. Hệ thống sẽ tự động phát hiện giao dịch và kích hoạt gói ngay lập tức</p>
+                  <p>4. Sau khi chuyển, nhấn nút <strong>"Xác nhận đã chuyển khoản"</strong> bên dưới</p>
                 </div>
 
                 {/* Action buttons */}
                 <div className="flex gap-3">
                   <button
                     onClick={handleSubmitPayment}
-                    disabled={submitting || countdown <= 0}
-                    className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5 disabled:opacity-60"
+                    disabled={submitting || countdown <= 0 || (selectedPlan.id === 'team_premium' && myTeams.length === 0)}
+                    className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
                     {submitting ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Đang ghi nhận...</>
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Đang xử lý...</>
                     ) : (
-                      <><ShieldCheck className="w-4 h-4" /> Đã chuyển khoản xong</>
+                      <><ShieldCheck className="w-4 h-4" /> Xác nhận đã chuyển khoản & Đợi kích hoạt</>
                     )}
                   </button>
                   <button
@@ -463,20 +815,21 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
             {/* STEP 2 – PENDING */}
             {step === 'pending' && (
               <div className="p-8 text-center space-y-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 dark:bg-yellow-950/40 mb-2">
-                  <Clock className="w-8 h-8 text-yellow-500" />
+                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-50 dark:bg-orange-950/20 mb-2">
+                  <Loader2 className="w-10 h-10 text-[#FF6B00] animate-spin" />
+                  <Clock className="w-5 h-5 text-orange-500 absolute bottom-1 right-1 bg-white dark:bg-[#13131C] rounded-full p-0.5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-gray-800 dark:text-white">Đã Ghi Nhận! ✅</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed max-w-xs mx-auto">
-                    Đơn thanh toán của bạn đã được ghi nhận. Admin sẽ xác nhận trong vòng <strong>24 giờ</strong>.
-                    Bạn sẽ nhận thông báo ngay khi tài khoản được nâng cấp.
+                  <h3 className="text-xl font-black text-gray-800 dark:text-white">Đang Kiểm Tra Giao Dịch... ⏳</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2.5 leading-relaxed max-w-xs mx-auto">
+                    Hệ thống đang tự động đối soát giao dịch chuyển khoản của bạn. Vui lòng <strong>không đóng trình duyệt</strong>.
+                    Tài khoản sẽ tự động nâng cấp ngay khi nhận được tiền từ ngân hàng (thông thường từ 1 - 2 phút).
                   </p>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-[#0B0B0F] border dark:border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 text-left">
+                <div className="bg-gray-50 dark:bg-[#0B0B0F]/60 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 text-xs space-y-2.5 text-left">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Mã giao dịch:</span>
+                    <span className="text-gray-400">Mã nội dung CK:</span>
                     <span className="font-mono font-black text-[#FF6B00]">{txId}</span>
                   </div>
                   <div className="flex justify-between">
@@ -489,24 +842,192 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Trạng thái:</span>
-                    <span className="font-bold text-yellow-500 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Chờ xác nhận</span>
+                    <span className="font-bold text-[#FF6B00] flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Chờ ngân hàng xác thực...
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button onClick={downloadInvoice} className="flex-1 py-3 bg-gray-800 text-white text-xs font-bold rounded-xl hover:bg-gray-900 transition flex items-center justify-center gap-1.5">
+                <div className="flex gap-3 pt-2">
+                  <button onClick={downloadInvoice} className="flex-1 py-3.5 bg-gray-100 dark:bg-[#1C1C28] text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5">
                     <Download className="w-4 h-4" /> Tải Phiếu
                   </button>
-                  <button onClick={() => window.print()} className="flex-1 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5">
-                    <Printer className="w-4 h-4" /> In Biên Nhận
+                  <button 
+                    onClick={() => setShowModal(false)} 
+                    className="flex-1 py-3.5 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md"
+                  >
+                    Đóng (Kích hoạt ngầm)
                   </button>
                 </div>
+              </div>
+            )}
 
-                <button onClick={() => setShowModal(false)} className="w-full py-3 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition">
-                  Đóng & Chờ Xác Nhận
+            {/* STEP 3 – SUCCESS */}
+            {step === 'success' && (
+              <div className="p-8 text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 dark:bg-green-950/20 mb-2 border border-green-500/30">
+                  <CheckCircle className="w-12 h-12 text-green-500 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-800 dark:text-white flex items-center justify-center gap-2">
+                    <Crown className="w-6 h-6 text-yellow-500 animate-bounce" />
+                    Nâng Cấp Thành Công! 🎉
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 leading-relaxed max-w-xs mx-auto">
+                    Cảm ơn bạn đã đồng hành cùng StudyConnect! Gói <strong>{selectedPlan.name}</strong> của bạn đã được kích hoạt thành công.
+                  </p>
+                </div>
+
+                <div className="bg-green-50/50 dark:bg-green-950/10 border border-green-100 dark:border-green-900/20 rounded-2xl p-4 text-xs space-y-2.5 text-left">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Mã giao dịch:</span>
+                    <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{txId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Gói dịch vụ:</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">{selectedPlan.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trạng thái:</span>
+                    <span className="font-bold text-green-600 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Đang hoạt động
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowModal(false)} 
+                  className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg transition shadow-md flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" /> Bắt đầu trải nghiệm ngay!
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AUTH REQUIRED MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl w-full max-w-sm border border-gray-100 dark:border-gray-800 shadow-2xl p-6 text-center space-y-6 animate-scaleUp">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-50 dark:bg-orange-950/20 text-[#FF6B00]">
+              <AlertCircle className="w-8 h-8 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-gray-800 dark:text-white">Yêu Cầu Đăng Nhập</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Vui lòng đăng nhập tài khoản StudyConnect để tiến hành nâng cấp và mở khóa các tính năng Premium.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="flex-1 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+              >
+                Đã hiểu
+              </button>
+              <button
+                onClick={() => {
+                  setShowAuthModal(false)
+                  navigate('/login')
+                }}
+                className="flex-1 py-3 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md"
+              >
+                Đăng nhập
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── COMPARISON MODAL ─── */}
+      {showComparisonModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl w-full max-w-5xl border border-gray-150 dark:border-gray-800 shadow-2xl max-h-[90vh] flex flex-col animate-scaleUp">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b dark:border-gray-800 flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="text-lg font-black text-gray-800 dark:text-white flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-[#FF6B00]" />
+                  So Sánh Chi Tiết Quyền Lợi & Tính Năng Các Gói
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Mọi chức năng dưới đây đều được tích hợp thực tế trên hệ thống và tương thích theo phân quyền gói của bạn.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowComparisonModal(false)} 
+                className="text-gray-400 hover:text-gray-650 dark:hover:text-white p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="overflow-x-auto rounded-2xl border border-gray-155 dark:border-gray-800/80 shadow-sm">
+                <table className="w-full text-left border-collapse min-w-[800px] text-xs">
+                  <thead>
+                    <tr className="bg-gray-50/80 dark:bg-[#0B0B0F]/70 border-b dark:border-gray-800 sticky top-0 backdrop-blur-md z-10">
+                      <th className="p-4 font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[26%]">Tính năng & Quyền lợi</th>
+                      <th className="p-4 font-black text-gray-750 dark:text-gray-200 w-[14%]">Standard</th>
+                      <th className="p-4 font-black text-[#FF6B00] dark:text-orange-400 w-[15%]">Pro Premium</th>
+                      <th className="p-4 font-black text-[#FF6B00] dark:text-orange-400 w-[15%]">Team Premium</th>
+                      <th className="p-4 font-black text-purple-650 dark:text-purple-400 w-[15%]">Enterprise</th>
+                      <th className="p-4 font-black text-purple-650 dark:text-purple-400 w-[15%]">Corporate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                    {COMPARISON_CATEGORIES.map((category, catIdx) => (
+                      <Fragment key={catIdx}>
+                        {/* Section Header */}
+                        <tr className="bg-gray-50/50 dark:bg-gray-900/10">
+                          <td colSpan={6} className="p-3 bg-gray-100/50 dark:bg-[#1A1A26]/80 font-black text-[#FF6B00] dark:text-orange-400 border-y border-gray-200 dark:border-gray-800/80 uppercase tracking-wider text-[10px] pl-4">
+                            {category.name}
+                          </td>
+                        </tr>
+                        {/* Features */}
+                        {category.features.map((feat, featIdx) => (
+                          <tr key={featIdx} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10 transition-colors">
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30 pr-3">
+                              <p className="font-extrabold text-gray-800 dark:text-white text-xs">{feat.name}</p>
+                              <p className="text-[10px] text-gray-400 mt-1 font-medium leading-relaxed">{feat.desc}</p>
+                            </td>
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30">
+                              {renderComparisonCell(feat.free)}
+                            </td>
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30">
+                              {renderComparisonCell(feat.premium)}
+                            </td>
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30">
+                              {renderComparisonCell(feat.team)}
+                            </td>
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30">
+                              {renderComparisonCell(feat.enterprise)}
+                            </td>
+                            <td className="p-4 border-b border-gray-100 dark:border-gray-800/30">
+                              {renderComparisonCell(feat.corporate)}
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-[#0B0B0F]/20 flex justify-end shrink-0">
+              <button
+                onClick={() => setShowComparisonModal(false)}
+                className="px-6 py-2.5 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-650 text-white text-xs font-bold rounded-xl transition shadow-sm"
+              >
+                Đóng bảng so sánh
+              </button>
+            </div>
           </div>
         </div>
       )}

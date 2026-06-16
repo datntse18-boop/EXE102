@@ -87,6 +87,9 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+    if (error.response?.status === 403 && error.response?.data?.isLimitReached) {
+      window.dispatchEvent(new CustomEvent('ai-limit-reached', { detail: error.response.data.message }))
+    }
     return Promise.reject(error)
   }
 )

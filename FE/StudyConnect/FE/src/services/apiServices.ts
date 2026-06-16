@@ -54,6 +54,11 @@ export const userService = {
     const { data } = await api.patch('/users/profile', profile)
     return data.data
   },
+
+  deleteUser: async (id: string) => {
+    const { data } = await api.delete(`/users/${id}`)
+    return data
+  },
 }
 
 export const teamService = {
@@ -100,6 +105,21 @@ export const teamService = {
   joinClass: async (teamId: string, classCode: string) => {
     const { data } = await api.post(`/teams/${teamId}/join-class`, { classCode })
     return data.data
+  },
+
+  requestLeaveTeam: async (teamId: string) => {
+    const { data } = await api.post(`/teams/${teamId}/leave-request`)
+    return data
+  },
+
+  getLeaveRequests: async (teamId: string) => {
+    const { data } = await api.get(`/teams/${teamId}/leave-requests`)
+    return data.data
+  },
+
+  resolveLeaveRequest: async (teamId: string, requestId: string, action: 'approve' | 'reject') => {
+    const { data } = await api.post(`/teams/${teamId}/leave-requests/${requestId}/resolve`, { action })
+    return data
   },
 }
 
@@ -209,9 +229,12 @@ export const paymentService = {
     plan: 'premium' | 'enterprise',
     txId?: string,
     discountCode?: string,
-    amount?: number
+    amount?: number,
+    evidence?: string,
+    bankId?: string,
+    teamId?: string
   ) => {
-    const { data } = await api.post('/payments', { plan, txId, discountCode, amount })
+    const { data } = await api.post('/payments', { plan, txId, discountCode, amount, evidence, bankId, teamId })
     return data.data
   },
 

@@ -84,16 +84,59 @@ export default function UserManagement() {
     }
   }
 
+  const handleDeleteUser = async (userId: string, name: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của ${name} không? Thao tác này sẽ xóa toàn bộ dữ liệu liên quan và không thể phục hồi!`)) {
+      setUpdating(userId)
+      try {
+        await userService.deleteUser(userId)
+        setUsers(users.filter(u => u.id !== userId))
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Xóa tài khoản thất bại.')
+      } finally {
+        setUpdating(null)
+      }
+    }
+  }
+
+  // Calculate user statistics
+  const totalUsers = users.length
+  const studentCount = users.filter(u => u.role === 'member').length
+  const managerCount = users.filter(u => u.role === 'manager').length
+  const leaderCount = users.filter(u => u.role === 'leader').length
+  const activeCount = users.filter(u => u.status === 'active').length
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">User Management</h1>
+        <div>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">User Management</h1>
+          <p className="text-xs text-gray-400 mt-1">Quản lý tài khoản Giảng viên, Dean (Leader) và Sinh viên trong hệ thống</p>
+        </div>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="px-4 py-2.5 bg-[#FF6B00] text-white font-bold text-xs rounded-xl hover:bg-[#E85A00] transition flex items-center gap-1.5 shadow-md shadow-orange-500/10 cursor-pointer"
         >
           {showCreateForm ? 'Đóng form' : '+ Tạo tài khoản mới'}
         </button>
+      </div>
+
+      {/* Statistics Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: 'Tổng số người dùng', value: totalUsers, icon: '👥', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+          { label: 'Sinh viên (Member)', value: studentCount, icon: '🎓', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+          { label: 'Giảng viên (Manager)', value: managerCount, icon: '👩‍🔬', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
+          { label: 'Dean / Leader', value: leaderCount, icon: '👩‍🎓', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+          { label: 'Đang hoạt động', value: activeCount, icon: '✅', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
+        ].map(s => (
+          <div key={s.label} className={`border rounded-2xl p-4 bg-white dark:bg-[#13131C] ${s.color} flex flex-col justify-between h-24 shadow-sm`}>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{s.label}</span>
+              <span className="text-lg">{s.icon}</span>
+            </div>
+            <span className="text-2xl font-black text-gray-800 dark:text-white mt-2">{s.value}</span>
+          </div>
+        ))}
       </div>
 
       {showCreateForm && (
@@ -155,7 +198,6 @@ export default function UserManagement() {
                   <option value="member">Sinh viên (Member)</option>
                   <option value="leader">Quản lý (Dean / Leader)</option>
                   <option value="manager">Giảng viên (Manager)</option>
-                  <option value="admin">Quản trị IT (Admin)</option>
                 </select>
               </div>
 
@@ -259,17 +301,22 @@ export default function UserManagement() {
                     </td>
                     <td className="p-3 text-sm text-gray-600">{user.email}</td>
                     <td className="p-3">
-                      <select
-                        value={user.role}
-                        onChange={e => handleChangeRole(user.id, e.target.value)}
-                        disabled={updating === user.id}
-                        className="border rounded px-2 py-1 text-sm capitalize focus:outline-none focus:border-[#FF6B00]"
-                      >
-                        <option value="member">Member</option>
-                        <option value="leader">Leader</option>
-                        <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                      {user.role === 'admin' ? (
+                        <span className="px-2.5 py-1 text-xs font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
+                          System Admin
+                        </span>
+                      ) : (
+                        <select
+                          value={user.role}
+                          onChange={e => handleChangeRole(user.id, e.target.value)}
+                          disabled={updating === user.id}
+                          className="border rounded px-2 py-1 text-sm capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-700 dark:text-gray-300 font-bold"
+                        >
+                          <option value="member">Member</option>
+                          <option value="leader">Leader</option>
+                          <option value="manager">Manager</option>
+                        </select>
+                      )}
                     </td>
                     <td className="p-3 text-sm capitalize">
                       <span className={`px-2 py-1 rounded text-xs ${user.subscription === 'premium' ? 'bg-[#FFA64D] text-white' : user.subscription === 'enterprise' ? 'bg-[#FF6B00] text-white' : 'bg-gray-100'}`}>
@@ -282,13 +329,24 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <button
-                        onClick={() => handleSuspend(user.id)}
-                        disabled={updating === user.id}
-                        className={`px-3 py-1 rounded text-xs font-medium ${user.status === 'active' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
-                      >
-                        {user.status === 'active' ? 'Suspend' : 'Activate'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSuspend(user.id)}
+                          disabled={updating === user.id || user.role === 'admin'}
+                          className={`px-3 py-1 rounded text-xs font-medium transition ${user.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400' : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:text-green-400'} disabled:opacity-50`}
+                        >
+                          {user.status === 'active' ? 'Suspend' : 'Activate'}
+                        </button>
+                        {user.role !== 'admin' && (
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            disabled={updating === user.id}
+                            className="px-3 py-1 bg-red-100 hover:bg-red-600 text-red-650 hover:text-white dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-600 rounded text-xs font-medium transition disabled:opacity-50"
+                          >
+                            Xóa
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -91,6 +91,7 @@ model User {
   notifications      Notification[]
   balance            Int              @default(100000)
   investments        Investment[]
+  leaveRequests      LeaveRequest[]
 
   @@map("users")
 }
@@ -127,6 +128,9 @@ model Team {
   grades          TeamGrade[]
   jobPosts        JobPost[]
   chatMessages    ChatMessage[]
+  payments        Payment[]
+  subscription    SubscriptionPlan @default(free)
+  leaveRequests   LeaveRequest[]
 
   @@map("teams")
 }
@@ -212,6 +216,11 @@ model Payment {
   amount    Float
   plan      SubscriptionPlan
   status    PaymentStatus @default(pending)
+  txId      String?
+  evidence  String?
+  bankId    String?
+  teamId    String?
+  team      Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
   createdAt DateTime      @default(now())
 
   @@map("payments")
@@ -448,5 +457,19 @@ model Investment {
   createdAt DateTime @default(now())
 
   @@map("investments")
+}
+
+model LeaveRequest {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  status    String   @default("pending") // pending | accepted | rejected
+  createdAt DateTime @default(now())
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("leave_requests")
 }
 

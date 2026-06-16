@@ -124,6 +124,31 @@ export default function Dashboard() {
     }
   }
 
+  const handleRequestLeave = async (teamId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn gửi yêu cầu xin rời khỏi nhóm này không?')) {
+      try {
+        await teamService.requestLeaveTeam(teamId)
+        alert('Gửi yêu cầu thành công! Vui lòng đợi Trưởng nhóm phê duyệt.')
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Không thể gửi yêu cầu rời nhóm.')
+      }
+    }
+  }
+
+  const handleArchiveTeam = async (teamId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn giải tán nhóm này không? Tất cả thành viên khác sẽ bị kick, nhóm sẽ được lưu trữ và chỉ có bạn mới xem được dữ liệu.')) {
+      try {
+        await teamService.deleteTeam(teamId)
+        alert('Giải tán nhóm thành công! Nhóm đã chuyển sang trạng thái lưu trữ.');
+        // Refresh teams
+        const teamsData = await teamService.getTeams()
+        setTeams(teamsData)
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Không thể giải tán nhóm.')
+      }
+    }
+  }
+
   // Handle task status update for members
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
     try {
@@ -600,6 +625,29 @@ export default function Dashboard() {
                           {joiningClassTeamId === team.id ? 'Đang vào...' : 'Tham gia'}
                         </button>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Team Action Buttons (Delete / Leave) */}
+                  <div className="flex justify-end items-center gap-2 pt-2.5 border-t border-dashed border-orange-100/50">
+                    {team.status === 'inactive' ? (
+                      <span className="text-[8px] font-black text-gray-400 dark:text-gray-500 bg-gray-150 dark:bg-gray-850 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Đã lưu trữ (Inactive)
+                      </span>
+                    ) : team.leaderId === user?.id ? (
+                      <button
+                        onClick={() => handleArchiveTeam(team.id)}
+                        className="px-2.5 py-1.5 border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 text-[9px] font-bold rounded-xl transition"
+                      >
+                        Giải tán nhóm (Archive)
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRequestLeave(team.id)}
+                        className="px-2.5 py-1.5 border border-orange-250 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-[9px] font-bold rounded-xl transition"
+                      >
+                        Yêu cầu rời nhóm
+                      </button>
                     )}
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   CheckCircle, XCircle, Clock, CreditCard,
-  TrendingUp, Users, AlertCircle, RefreshCw, Search
+  TrendingUp, Users, AlertCircle, RefreshCw, Search, Eye, X
 } from 'lucide-react'
 import { paymentService } from '../../services/apiServices'
 
@@ -12,6 +12,9 @@ interface Payment {
   amount: number
   status: 'pending' | 'completed' | 'failed'
   createdAt: string
+  txId?: string
+  evidence?: string
+  bankId?: string
   user: { id: string; name: string; email: string; role: string }
 }
 
@@ -35,6 +38,7 @@ export default function PaymentManagement() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null)
+  const [viewingEvidence, setViewingEvidence] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -184,9 +188,10 @@ export default function PaymentManagement() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
-                  <th className="text-left px-5 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Người dùng</th>
+                  <th className="text-left px-5 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Người dùng / Giao dịch</th>
                   <th className="text-left px-4 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Gói</th>
                   <th className="text-left px-4 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Số tiền</th>
+                  <th className="text-left px-4 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Bằng chứng</th>
                   <th className="text-left px-4 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Ngày</th>
                   <th className="text-left px-4 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Trạng thái</th>
                   <th className="text-right px-5 py-3.5 text-gray-400 font-bold uppercase tracking-wider">Hành động</th>
@@ -202,6 +207,11 @@ export default function PaymentManagement() {
                       <td className="px-5 py-4">
                         <p className="font-bold text-gray-800 dark:text-white">{p.user.name}</p>
                         <p className="text-gray-400 mt-0.5">{p.user.email}</p>
+                        {p.txId && (
+                          <p className="text-[10px] mt-1.5 text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded w-max">
+                            Mã GD: <strong className="font-mono text-[#FF6B00]">{p.txId}</strong> | Ngân hàng: <strong className="text-blue-500 font-bold">{p.bankId || 'N/A'}</strong>
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex px-2.5 py-1 rounded-lg font-bold text-[10px] ${
@@ -214,6 +224,18 @@ export default function PaymentManagement() {
                       </td>
                       <td className="px-4 py-4 font-black text-gray-800 dark:text-white">
                         {p.amount.toLocaleString('vi-VN')} VNĐ
+                      </td>
+                      <td className="px-4 py-4">
+                        {p.evidence ? (
+                          <button
+                            onClick={() => setViewingEvidence(p.evidence!)}
+                            className="text-[#FF6B00] hover:text-[#E85A00] font-black text-[10px] flex items-center gap-1 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 px-2.5 py-1 rounded-lg transition"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Xem ảnh
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-[10px]">Không có</span>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-gray-400">
                         {new Date(p.createdAt).toLocaleDateString('vi-VN')}
@@ -285,6 +307,41 @@ export default function PaymentManagement() {
                 className="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
                 Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Evidence Viewer Modal */}
+      {viewingEvidence && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 w-full max-w-lg border border-gray-100 dark:border-gray-800 shadow-2xl relative space-y-4">
+            <div className="flex justify-between items-center border-b dark:border-gray-800 pb-3">
+              <h4 className="font-black text-gray-800 dark:text-white flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#FF6B00]" />
+                Bằng chứng chuyển khoản
+              </h4>
+              <button 
+                onClick={() => setViewingEvidence(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex justify-center bg-gray-50 dark:bg-[#0B0B0F] p-4 rounded-2xl border dark:border-gray-800">
+              <img 
+                src={viewingEvidence} 
+                alt="Evidence" 
+                className="max-h-[60vh] max-w-full object-contain rounded-xl shadow-md" 
+              />
+            </div>
+            <div className="text-center">
+              <button 
+                onClick={() => setViewingEvidence(null)}
+                className="px-6 py-2 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition"
+              >
+                Đóng
               </button>
             </div>
           </div>

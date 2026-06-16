@@ -55,6 +55,7 @@ export default function Sidebar() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     overview: true,
+    billing: true,
     ideation: true,
     workspace: true,
     mentorship: true,
@@ -97,6 +98,15 @@ export default function Sidebar() {
           items: [
             { to: '/dashboard', label: 'Bàn làm việc', icon: <Layers size={14} />, end: true },
             { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
+          ]
+        },
+        {
+          id: 'billing',
+          label: 'Tài khoản & Thanh toán',
+          icon: <CreditCard size={14} />,
+          items: [
+            { to: '/pricing', label: 'Nâng cấp gói Premium', icon: <Sparkles size={14} /> },
+            { to: '/payment-history', label: 'Lịch sử giao dịch', icon: <Clock3 size={14} /> }
           ]
         },
         {

@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext'
-import { LogOut, Shield, Sparkles, Bell, Sun, Moon } from 'lucide-react'
+import { LogOut, Shield, Sparkles, Bell } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { notificationService } from '../../services/apiServices'
@@ -8,21 +8,11 @@ export default function TopNav() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  // Theme State
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
-      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  })
-
+  // Theme State forced to dark mode
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
-  }, [isDarkMode])
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
+  }, [])
 
   // Notification States
   const [notifications, setNotifications] = useState<any[]>([])
@@ -86,14 +76,6 @@ export default function TopNav() {
       <div className="flex items-center gap-4">
         {!user ? (
           <div className="flex items-center gap-3">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              title={isDarkMode ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
-              className="p-2 rounded-xl text-gray-400 hover:text-[#FF6B00] hover:bg-[#FFF4E8]/50 transition cursor-pointer"
-            >
-              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
             <Link 
               to="/login" 
               className="px-4 py-2 text-xs font-bold text-gray-650 hover:text-[#FF6B00] transition"
@@ -119,15 +101,6 @@ export default function TopNav() {
                 {user.role}
               </div>
             </div>
-
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              title={isDarkMode ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
-              className="p-2 rounded-xl text-gray-400 hover:text-[#FF6B00] hover:bg-[#FFF4E8]/50 transition cursor-pointer"
-            >
-              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
 
             {/* Notifications Bell */}
             <div className="relative">
