@@ -55,7 +55,7 @@ export default function Register() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Nguyễn Văn A"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B00] transition"
+            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-[#1C1C28] placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-[#FF6B00] transition"
             required
           />
         </div>
