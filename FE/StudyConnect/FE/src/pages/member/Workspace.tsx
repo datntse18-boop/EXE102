@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
+import { io } from 'socket.io-client'
 import Card from '../../components/cards/Card'
-import { teamService, projectService, taskService, chatService, okrService, mentorService, githubService } from '../../services/apiServices'
+import { teamService, projectService, taskService, chatService, okrService, mentorService, githubService, aiService } from '../../services/apiServices'
 import AiConfigModal from '../../components/common/AiConfigModal'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -18,7 +19,10 @@ import {
   X,
   PlusCircle,
   Sparkles,
-  Bot
+  Bot,
+  Video,
+  Gauge,
+  Award
 } from 'lucide-react'
 
 export default function Workspace() {
@@ -31,7 +35,12 @@ export default function Workspace() {
   const [loading, setLoading] = useState(true)
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'kanban' | 'okr' | 'mentor'>('kanban')
+  const [activeTab, setActiveTab] = useState<'kanban' | 'okr' | 'mentor' | 'pitch'>('kanban')
+
+  // AI Pitch Video Analyzer states
+  const [pitchVideoUrl, setPitchVideoUrl] = useState('')
+  const [analyzingPitch, setAnalyzingPitch] = useState(false)
+  const [pitchAnalysisResult, setPitchAnalysisResult] = useState<any>(null)
 
   // AI Modal State
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
@@ -185,7 +194,49 @@ export default function Workspace() {
     loadObjectives()
   }, [selectedProject])
 
-  // Poll chat messages
+  // Get Socket Server URL
+  const getSocketUrl = () => {
+    const hostname = window.location.hostname
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3000'
+    }
+    if (import.meta.env.VITE_API_URL) {
+      return (import.meta.env.VITE_API_URL as string).replace('/api', '')
+    }
+    return window.location.origin
+  }
+
+  // Real-time Socket.io Chat & Notifications
+  useEffect(() => {
+    if (!selectedTeam) return
+
+    const socketUrl = getSocketUrl()
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    })
+
+    socket.on('connect', () => {
+      console.log('🔌 Socket connected to backend!')
+      socket.emit('join_team', selectedTeam.id)
+      if (user?.id) {
+        socket.emit('join_user', user.id)
+      }
+    })
+
+    socket.on('chat_message', (msg: any) => {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+    })
+
+    return () => {
+      socket.emit('leave_team', selectedTeam.id)
+      socket.disconnect()
+    }
+  }, [selectedTeam, user])
+
+  // Initial chat messages fetch
   useEffect(() => {
     if (!selectedTeam || !showChat) return
     
@@ -199,14 +250,35 @@ export default function Workspace() {
     }
 
     fetchChat()
-    const interval = setInterval(fetchChat, 5000) // Poll every 5s
-    return () => clearInterval(interval)
   }, [selectedTeam, showChat])
 
-  // Scroll chat to bottom
+  // Sync pitch url and reset result on project change
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages])
+    if (selectedProject) {
+      setPitchVideoUrl(selectedProject.pitchVideoUrl || '')
+      setPitchAnalysisResult(null)
+    } else {
+      setPitchVideoUrl('')
+      setPitchAnalysisResult(null)
+    }
+  }, [selectedProject])
+
+  const handleAnalyzePitchVideo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProject || !pitchVideoUrl.trim()) return
+    setAnalyzingPitch(true)
+    try {
+      const updatedProj = await projectService.updateProject(selectedProject.id, { pitchVideoUrl })
+      setSelectedProject(updatedProj)
+      const res = await aiService.analyzePitchVideo(selectedProject.id, pitchVideoUrl)
+      setPitchAnalysisResult(res)
+    } catch (err) {
+      console.error(err)
+      alert('Không thể hoàn tất phân tích video. Vui lòng cấu hình API Key và thử lại.')
+    } finally {
+      setAnalyzingPitch(false)
+    }
+  }
 
   const loadObjectives = async () => {
     if (!selectedProject) return
@@ -524,6 +596,12 @@ export default function Workspace() {
             className={`pb-3 px-6 font-black text-xs transition border-b-2 ${activeTab === 'mentor' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
           >
             🤖 Cố vấn AI 24/7
+          </button>
+          <button
+            onClick={() => setActiveTab('pitch')}
+            className={`pb-3 px-6 font-black text-xs transition border-b-2 ${activeTab === 'pitch' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            🎥 AI Pitching Analyzer
           </button>
         </div>
 
@@ -914,9 +992,188 @@ export default function Workspace() {
               </button>
             </form>
           </div>
-        )}
+        ) : activeTab === 'pitch' ? (
+          /* AI PITCHING ANALYZER PANEL */
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 border border-gray-100 dark:border-gray-800/40 shadow-sm space-y-6">
+            <div className="flex items-center gap-3 border-b dark:border-gray-800 pb-4">
+              <div className="p-2.5 bg-orange-500/10 dark:bg-orange-950/20 text-[#FF6B00] rounded-2xl border border-orange-100 dark:border-orange-900/20">
+                <Video className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-gray-800 dark:text-white text-sm">
+                  Trình Phân Tích Thuyết Trình Gọi Vốn (AI Pitching Video Analyzer)
+                </h3>
+                <p className="text-[10px] text-gray-400 font-medium">
+                  Đánh giá kỹ năng thuyết trình, nội dung, tốc độ nói (wpm) và ngôn ngữ hình thể giả lập bằng AI
+                </p>
+              </div>
+            </div>
 
-      </div>
+            {/* Input URL Form */}
+            <form onSubmit={handleAnalyzePitchVideo} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Đường dẫn Video Thuyết trình (YouTube / Drive / Vimeo)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={pitchVideoUrl}
+                    onChange={e => setPitchVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    disabled={!selectedProject || analyzingPitch}
+                    className="w-full text-xs bg-gray-50 dark:bg-[#181824] border dark:border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-[#FF6B00] disabled:opacity-50 font-medium"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={!selectedProject || !pitchVideoUrl.trim() || analyzingPitch}
+                    className="px-6 bg-[#FF6B00] text-white rounded-xl hover:bg-[#E85A00] transition disabled:opacity-50 flex items-center justify-center gap-1.5 flex-shrink-0 font-bold text-xs"
+                  >
+                    {analyzingPitch ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Đang phân tích...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Phân tích bằng AI
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Result display */}
+            {pitchAnalysisResult ? (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* Left Column: Overall Score & Metrics */}
+                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">Điểm Thuyết trình</span>
+                    <div className="relative flex items-center justify-center">
+                      <div className="text-4xl font-black text-[#FF6B00]">{pitchAnalysisResult.scores.overall}</div>
+                      <span className="text-xs text-gray-400 font-bold ml-0.5">/100</span>
+                    </div>
+                    <div className="mt-4 flex gap-1.5 justify-center flex-wrap">
+                      <span className="bg-[#FF6B00]/10 text-[#FF6B00] px-2 py-0.5 rounded text-[9px] font-black border border-[#FF6B00]/25">
+                        {pitchAnalysisResult.scores.overall >= 80 ? 'Xuất Sắc (Excellent)' : 'Khá (Good)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Middle Column: Detailed Score Parameters */}
+                  <div className="md:col-span-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-5 space-y-3">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1">Chi tiết các tiêu chí</span>
+                    
+                    {/* Progress bars */}
+                    <div className="space-y-2">
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="text-gray-700 dark:text-gray-300">Hook & Dẫn dắt (Hook)</span>
+                          <span className="text-[#FF6B00] font-bold">{pitchAnalysisResult.scores.hook}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-250 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#FF6B00] h-full" style={{ width: `${pitchAnalysisResult.scores.hook}%` }} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="text-gray-700 dark:text-gray-300">Tính nhất quán Vấn đề & Giải pháp</span>
+                          <span className="text-[#FF6B00] font-bold">{pitchAnalysisResult.scores.problemSolution}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-250 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#FF6B00] h-full" style={{ width: `${pitchAnalysisResult.scores.problemSolution}%` }} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="text-gray-700 dark:text-gray-300">Phong thái tự tin & Ngôn ngữ cơ thể</span>
+                          <span className="text-[#FF6B00] font-bold">{pitchAnalysisResult.scores.confidence}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-250 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#FF6B00] h-full" style={{ width: `${pitchAnalysisResult.scores.confidence}%` }} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="text-gray-700 dark:text-gray-300">Nhịp độ & Phân bổ thời gian (Pacing)</span>
+                          <span className="text-[#FF6B00] font-bold">{pitchAnalysisResult.scores.pacing}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-250 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#FF6B00] h-full" style={{ width: `${pitchAnalysisResult.scores.pacing}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Speech Pacing Analysis */}
+                <div className="bg-orange-500/5 border border-orange-500/20 dark:border-orange-500/10 rounded-2xl p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-orange-500/10 dark:bg-orange-950/20 text-[#FF6B00] rounded-xl border border-orange-500/20 flex-shrink-0">
+                      <Gauge className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-800 dark:text-white text-xs">Phân Tích Tốc Độ Nói (Speech Pacing)</h4>
+                      <p className="text-[10px] text-gray-400 font-medium mt-0.5">{pitchAnalysisResult.pacingAnalysis.toneFeedback}</p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[8px] text-gray-400 block font-black uppercase">Tốc độ trung bình</span>
+                    <span className="text-lg font-black text-[#FF6B00]">{pitchAnalysisResult.pacingAnalysis.wpm} WPM</span>
+                    <span className="text-[9px] bg-green-550/10 text-green-500 font-bold px-1.5 py-0.5 rounded border border-green-500/20 ml-2 uppercase">
+                      {pitchAnalysisResult.pacingAnalysis.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Text feedbacks */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="bg-gray-550/20 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-4">
+                    <h5 className="font-bold text-gray-800 dark:text-white text-xs mb-2 flex items-center gap-1.5">
+                      📣 Hook & Mở bài
+                    </h5>
+                    <p className="text-[11px] text-gray-400 leading-relaxed font-medium">{pitchAnalysisResult.feedback.hook}</p>
+                  </div>
+                  <div className="bg-gray-550/20 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-4">
+                    <h5 className="font-bold text-gray-800 dark:text-white text-xs mb-2 flex items-center gap-1.5">
+                      💡 Cốt lõi Nội dung
+                    </h5>
+                    <p className="text-[11px] text-gray-400 leading-relaxed font-medium">{pitchAnalysisResult.feedback.content}</p>
+                  </div>
+                  <div className="bg-gray-550/20 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-4">
+                    <h5 className="font-bold text-gray-800 dark:text-white text-xs mb-2 flex items-center gap-1.5">
+                      👤 Phong thái & Ngữ điệu
+                    </h5>
+                    <p className="text-[11px] text-gray-400 leading-relaxed font-medium">{pitchAnalysisResult.feedback.confidence}</p>
+                  </div>
+                </div>
+
+                {/* Suggestions List */}
+                <div className="bg-gray-550/20 dark:bg-white/5 border border-gray-100 dark:border-gray-800/40 rounded-2xl p-5 space-y-3">
+                  <h4 className="font-black text-gray-800 dark:text-white text-xs flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-yellow-500 animate-bounce" /> Khuyến nghị cải thiện của giám khảo AI
+                  </h4>
+                  <ul className="space-y-2 pl-4 list-disc text-[11px] text-gray-450 font-medium">
+                    {pitchAnalysisResult.suggestions.map((s: string, idx: number) => (
+                      <li key={idx} className="leading-relaxed">{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 dark:bg-white/5 p-12 text-center rounded-2xl border border-gray-100 dark:border-gray-800/40 text-gray-400 text-xs font-semibold">
+                🎥 Vui lòng nhập đường dẫn video thuyết trình dự án của bạn và nhấn nút để bắt đầu phân tích bằng AI.
+              </div>
+            )}
+          </div>
+        ) : (
+          /* AI MENTOR 24/7 PANEL */
+          <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 border border-gray-100 dark:border-gray-800/40 shadow-sm flex flex-col h-[600px]">
 
       {/* RIGHT SIDE PANEL: Drawer for Team Chat */}
       <div

@@ -16,6 +16,50 @@ export default function Profile() {
   
   const [updating, setUpdating] = useState(false)
 
+  // Dynamic Badges calculation
+  const badgesList = [
+    {
+      id: 'startup_pioneer',
+      name: 'Startup Pioneer',
+      description: 'Đã điền kinh nghiệm làm dự án khởi nghiệp.',
+      unlocked: !!user?.pastProjects && user.pastProjects.trim().length > 10,
+      icon: '🚀',
+      color: 'from-blue-500 to-indigo-600'
+    },
+    {
+      id: 'commitment_master',
+      name: 'Commitment Master',
+      description: 'Cam kết thời gian hoạt động từ 15h/tuần trở lên.',
+      unlocked: (user?.commitmentHours || 0) >= 15,
+      icon: '⏱️',
+      color: 'from-green-500 to-emerald-600'
+    },
+    {
+      id: 'finance_expert',
+      name: 'Finance Expert',
+      description: 'Kỹ năng chuyên môn hoặc vai trò thiên về tài chính/PM.',
+      unlocked: !!user?.desiredRole && ['Biz', 'Leader'].includes(user.desiredRole),
+      icon: '💰',
+      color: 'from-amber-500 to-orange-600'
+    },
+    {
+      id: 'tech_ninja',
+      name: 'Tech Ninja',
+      description: 'Có kỹ năng lập trình hoặc UI/UX designer.',
+      unlocked: !!user?.desiredRole && ['Developer', 'Designer'].includes(user.desiredRole),
+      icon: '🥷',
+      color: 'from-red-500 to-pink-600'
+    },
+    {
+      id: 'class_connected',
+      name: 'Class Connecter',
+      description: 'Đã gia nhập mã lớp học chính thức.',
+      unlocked: !!user?.classCode && user.classCode.trim().length > 0,
+      icon: '🏫',
+      color: 'from-purple-500 to-fuchsia-600'
+    }
+  ]
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setUpdating(true)
@@ -97,6 +141,35 @@ export default function Profile() {
             <p className="text-[10px] text-gray-500 leading-relaxed">
               Điền đầy đủ **Kỹ năng chuyên môn** và **Vai trò mong muốn** giúp thuật toán AI của StudyConnect định hình nhóm chính xác và giới thiệu bạn đến các dự án phù hợp nhất!
             </p>
+          </Card>
+
+          <Card>
+            <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider border-b pb-2 mb-4">
+              Huy hiệu thành tích (Badges Shelf)
+            </h3>
+            <div className="space-y-3">
+              {badgesList.map(badge => (
+                <div 
+                  key={badge.id} 
+                  className={`flex items-center gap-3 p-3 rounded-2xl border transition ${
+                    badge.unlocked 
+                      ? 'bg-white dark:bg-[#181824] border-orange-500/20 shadow-sm' 
+                      : 'bg-gray-50/50 dark:bg-gray-950/20 border-gray-100 dark:border-gray-800/40 opacity-50'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${badge.unlocked ? badge.color : 'from-gray-300 to-gray-400 dark:from-gray-800 dark:to-gray-900'} flex items-center justify-center text-lg shadow-md text-white font-bold flex-shrink-0`}>
+                    {badge.icon}
+                  </div>
+                  <div>
+                    <h4 className={`text-xs font-black flex items-center gap-1.5 ${badge.unlocked ? 'text-gray-800 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
+                      {badge.name} 
+                      {badge.unlocked && <span className="text-[8px] bg-orange-500/10 text-[#FF6B00] px-1 rounded font-black uppercase">Đạt</span>}
+                    </h4>
+                    <p className="text-[9px] text-gray-450 font-semibold mt-0.5">{badge.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         </div>
 

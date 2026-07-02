@@ -317,6 +317,11 @@ export const aiService = {
     const { data } = await api.post('/ai/auto-grouping', { classCode })
     return data
   },
+
+  analyzePitchVideo: async (projectId: string, videoUrl: string) => {
+    const { data } = await api.post('/ai/pitch-analysis', { projectId, videoUrl })
+    return data.data
+  },
 }
 
 export const reportService = {

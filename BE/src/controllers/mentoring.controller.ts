@@ -130,6 +130,26 @@ export const bookSlot = async (req: AuthRequest, res: Response): Promise<void> =
       }
     })
 
+    // Create notification for Lecturer
+    try {
+      const lecturerNotification = await prisma.notification.create({
+        data: {
+          userId: slot.lecturerId,
+          title: 'Lịch hẹn mới được đặt 📅',
+          content: `Nhóm ${updatedSlot.bookedByTeam?.name} đã đặt lịch hẹn cố vấn vào lúc ${new Date(slot.startTime).toLocaleString('vi-VN')} về chủ đề: "${topic}".`,
+          link: '/mentorship'
+        }
+      })
+
+      // Broadcast notification via socket
+      const io = req.app.get('io')
+      if (io) {
+        io.to(`user_${slot.lecturerId}`).emit('notification', lecturerNotification)
+      }
+    } catch (notifErr) {
+      console.error('Failed to create booking notification:', notifErr)
+    }
+
     res.json({ success: true, message: 'Đặt lịch cố vấn thành công', data: updatedSlot })
   } catch (err) {
     console.error(err)

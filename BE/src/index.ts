@@ -1,6 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
 import authRoutes from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
 import teamRoutes from './routes/team.routes'
@@ -28,6 +30,39 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3000
+
+const httpServer = createServer(app)
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+  }
+})
+
+app.set('io', io)
+
+io.on('connection', (socket) => {
+  console.log(`🔌 Client connected: ${socket.id}`)
+
+  socket.on('join_team', (teamId) => {
+    socket.join(teamId)
+    console.log(`👥 Client ${socket.id} joined team room: ${teamId}`)
+  })
+
+  socket.on('leave_team', (teamId) => {
+    socket.leave(teamId)
+    console.log(`👥 Client ${socket.id} left team room: ${teamId}`)
+  })
+
+  socket.on('join_user', (userId) => {
+    socket.join(`user_${userId}`)
+    console.log(`👤 Client ${socket.id} joined user room: user_${userId}`)
+  })
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Client disconnected: ${socket.id}`)
+  })
+})
 
 // Parse multiple allowed origins from env (comma-separated)
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
@@ -98,7 +133,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   })
 })
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 StudyConnect API running on http://localhost:${PORT}`)
   console.log(`📚 Environment: ${process.env.NODE_ENV}`)
 })

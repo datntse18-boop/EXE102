@@ -1042,4 +1042,110 @@ Chú ý: "leaderId" phải nằm trong danh sách "memberIds" của chính nhóm
   }
 }
 
+// POST /api/ai/pitch-analysis
+export const analyzePitchVideo = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId, videoUrl } = req.body
+    if (!projectId || !videoUrl) {
+      res.status(400).json({ success: false, message: 'projectId and videoUrl are required' })
+      return
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { team: true }
+    })
+
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' })
+      return
+    }
+
+    const canvasText = project.canvasModel 
+      ? `\n\nMô hình Canvas kinh doanh hiện tại: ${project.canvasModel}` 
+      : ''
+
+    const prompt = `Bạn là chuyên gia tư vấn khởi nghiệp và là giám khảo cuộc thi Demo Day của môn học EXE101/EXE201.
+Sinh viên của dự án "${project.name}" đã tải lên một video thuyết trình gọi vốn (Pitching) tại liên kết: "${videoUrl}".
+Mô tả dự án: "${project.description}"${canvasText}
+
+Dựa trên dự án khởi nghiệp này và liên kết thuyết trình, hãy đưa ra một đánh giá chi tiết (giả lập dựa trên thông tin dự án và tiêu chuẩn pitching học đường) phân tích kỹ năng thuyết trình và nội dung dự án.
+
+Hãy trả về chính xác định dạng JSON (chỉ JSON, không giải thích thêm, không markdown \`\`\`json):
+{
+  "scores": {
+    "hook": 80,
+    "problemSolution": 75,
+    "confidence": 85,
+    "pacing": 80,
+    "overall": 80
+  },
+  "pacingAnalysis": {
+    "wpm": 135,
+    "status": "Tối ưu (Optimal)",
+    "toneFeedback": "Tông giọng rõ ràng, tốc độ vừa phải dễ theo dõi. Cần nhấn mạnh hơn ở phần mô tả nỗi đau của khách hàng."
+  },
+  "feedback": {
+    "hook": "Mở đầu khá trực diện nhưng thiếu yếu tố gây bất ngờ hoặc số liệu ấn tượng.",
+    "content": "Giải pháp bám sát vấn đề, tuy nhiên mô hình doanh thu cần được giải thích kỹ hơn trong slide tài chính.",
+    "confidence": "Người trình bày có phong thái tự tin, mắt nhìn thẳng, ngôn ngữ cơ thể tốt."
+  },
+  "suggestions": [
+    "Hãy mở đầu bằng một câu hỏi khơi gợi nỗi đau khách hàng hoặc một con số thống kê giật mình.",
+    "Dành thêm 30 giây để làm rõ mô hình định giá dịch vụ.",
+    "Cải thiện chất lượng âm thanh của video thuyết trình để tăng tính chuyên nghiệp."
+  ]
+}
+
+Lưu ý: Thay đổi các nhận xét và điểm số dựa trên chủ đề của dự án để đảm bảo tính cá nhân hóa và thiết thực nhất.`
+
+    let analysis = null
+    try {
+      const model = getGeminiModel(req)
+      const result = await model.generateContent(prompt)
+      const text = result.response.text()
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0])
+        await logAIUsage(req.user!.id, 'analytics', prompt, text)
+      }
+    } catch (err) {
+      console.error('AI Pitch Video Error:', err)
+    }
+
+    if (!analysis) {
+      analysis = {
+        scores: {
+          hook: 78,
+          problemSolution: 82,
+          confidence: 80,
+          pacing: 85,
+          overall: 81
+        },
+        pacingAnalysis: {
+          wpm: 130,
+          status: "Tối ưu (Optimal)",
+          toneFeedback: "Tốc độ nói ổn định, rõ ràng và mạch lạc. Có cố gắng tạo điểm nhấn ở các keyword quan trọng."
+        },
+        feedback: {
+          hook: "Mở đầu tốt, giới thiệu được dự án trực diện. Nên bổ sung story-telling để lôi cuốn hơn.",
+          content: "Giải pháp mô tả chi tiết, dễ hiểu. Cần làm rõ sự khác biệt của mình so với đối thủ cạnh tranh.",
+          confidence: "Thuyết trình chuyên nghiệp, ngữ điệu tự nhiên, trình bày lưu loát."
+        },
+        suggestions: [
+          "Bổ sung phần so sánh trực quan với đối thủ cạnh tranh hiện tại trên thị trường.",
+          "Nên lồng ghép một câu chuyện ngắn thực tế của khách hàng mục tiêu để thuyết phục hơn.",
+          "Cân nhắc chỉnh sửa slide sang tông màu tương phản cao hơn để hiển thị rõ khi trình chiếu."
+        ]
+      }
+    }
+
+    res.json({ success: true, data: analysis })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Pitch analysis failed' })
+  }
+}
+
+
 

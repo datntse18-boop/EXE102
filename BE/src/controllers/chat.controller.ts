@@ -70,6 +70,12 @@ export const sendChatMessage = async (req: AuthRequest, res: Response): Promise<
       }
     })
 
+    // Broadcast message via Socket.io
+    const io = req.app.get('io')
+    if (io) {
+      io.to(teamId).emit('chat_message', newMessage)
+    }
+
     res.status(201).json({ success: true, data: newMessage })
   } catch (err) {
     console.error(err)
