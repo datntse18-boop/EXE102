@@ -843,7 +843,7 @@ export default function Workspace() {
               </div>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'mentor' ? (
           /* AI MENTOR 24/7 PANEL */
           <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 border border-gray-100 dark:border-gray-800/40 shadow-sm flex flex-col h-[600px]">
             {/* Header */}
@@ -1171,10 +1171,9 @@ export default function Workspace() {
               </div>
             )}
           </div>
-        ) : (
-          /* AI MENTOR 24/7 PANEL */
-          <div className="bg-white dark:bg-[#13131C] rounded-3xl p-6 border border-gray-100 dark:border-gray-800/40 shadow-sm flex flex-col h-[600px]">
+        ) : null}
 
+        </div>
       {/* RIGHT SIDE PANEL: Drawer for Team Chat */}
       <div
         className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#111119] border-l border-gray-100 dark:border-gray-800 shadow-2xl z-40 transition-transform duration-300 transform flex flex-col ${
