@@ -74,13 +74,23 @@ export default function TopNav() {
       </div>
 
       {user && (
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-          className="hidden md:flex items-center gap-2.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-white hover:bg-gray-800/40 transition cursor-pointer"
-        >
-          <span>🔍 Tìm tính năng...</span>
-          <kbd className="bg-gray-150 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[8px] border dark:border-gray-700">Ctrl + K</kbd>
-        </button>
+        <div className="hidden md:flex items-center gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            className="flex items-center gap-2.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-white hover:bg-gray-800/40 transition cursor-pointer"
+          >
+            <span>🔍 Tìm tính năng...</span>
+            <kbd className="bg-gray-150 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[8px] border dark:border-gray-700">Ctrl + K</kbd>
+          </button>
+          
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('toggle-zen-mode'))}
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-white hover:bg-gray-800/40 transition cursor-pointer flex items-center gap-1.5"
+            title="Chế độ tập trung (Shift + Z)"
+          >
+            <span>🧘 Zen</span>
+          </button>
+        </div>
       )}
 
       <div className="flex items-center gap-4">

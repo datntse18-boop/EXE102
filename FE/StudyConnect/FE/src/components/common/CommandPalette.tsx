@@ -29,7 +29,8 @@ export default function CommandPalette() {
     { id: 'kanban', title: 'Bảng Kanban Workspace', subtitle: 'Kéo thả quản lý thẻ công việc thành viên', icon: <ClipboardList size={14} />, path: '/workspace' },
     { id: 'admin_users', title: 'Quản lý người dùng (Admin)', subtitle: 'Cấp quyền, kích hoạt hoặc đình chỉ tài khoản', icon: <Shield size={14} />, path: '/admin/users' },
     { id: 'admin_feedbacks', title: 'Quản lý Góp ý & Ý kiến (Admin)', subtitle: 'Xem danh sách và trả lời ý kiến học viên', icon: <MessageSquare size={14} />, path: '/admin/feedbacks' },
-    { id: 'admin_revenue', title: 'Báo cáo Doanh thu hệ thống (Admin)', subtitle: 'Xem biểu đồ tài chính thực tế và tần suất dịch vụ', icon: <TrendingUp size={14} />, path: '/admin/reports' }
+    { id: 'admin_revenue', title: 'Báo cáo Doanh thu hệ thống (Admin)', subtitle: 'Xem biểu đồ tài chính thực tế và tần suất dịch vụ', icon: <TrendingUp size={14} />, path: '/admin/reports' },
+    { id: 'zen', title: 'Bật/Tắt Chế độ tập trung (Zen Mode)', subtitle: 'Ẩn thanh Sidebar và Topbar để phóng to màn hình làm việc (Shift + Z)', icon: <Compass size={14} />, path: '' }
   ]
 
   useEffect(() => {
@@ -67,7 +68,11 @@ export default function CommandPalette() {
   )
 
   const handleSelect = (item: CommandItem) => {
-    navigate(item.path)
+    if (item.id === 'zen') {
+      window.dispatchEvent(new CustomEvent('toggle-zen-mode'))
+    } else {
+      navigate(item.path)
+    }
     setIsOpen(false)
   }
 

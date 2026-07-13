@@ -9,6 +9,7 @@ import { Sparkles, Crown, Zap, X, AlertCircle, ArrowLeft } from 'lucide-react'
 export default function MainLayout() {
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
+  const [zenMode, setZenMode] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -19,9 +20,27 @@ export default function MainLayout() {
       setShowLimitModal(true)
     }
 
+    const handleToggleZen = () => {
+      setZenMode(prev => !prev)
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key.toLowerCase() === 'z') {
+        const activeEl = document.activeElement
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.getAttribute('contenteditable') === 'true')) {
+          return
+        }
+        setZenMode(prev => !prev)
+      }
+    }
+
     window.addEventListener('ai-limit-reached', handleLimitReached)
+    window.addEventListener('toggle-zen-mode', handleToggleZen)
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('ai-limit-reached', handleLimitReached)
+      window.removeEventListener('toggle-zen-mode', handleToggleZen)
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
 
@@ -29,15 +48,23 @@ export default function MainLayout() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[var(--color-bg)]">
-      <Sidebar />
+      {!zenMode && <Sidebar />}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <TopNav />
-        <main className="flex-1 overflow-y-auto p-6">
+        {!zenMode && <TopNav />}
+        <main className="flex-1 overflow-y-auto p-6 relative">
+          {zenMode && (
+            <button
+              onClick={() => setZenMode(false)}
+              className="absolute top-4 right-4 z-50 px-3 py-1.5 bg-[#FF6B00] hover:bg-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-md transition no-print cursor-pointer"
+            >
+              Thoát Chế độ Zen (Shift + Z)
+            </button>
+          )}
           <div className="container mx-auto">
             {!isMainPage && (
               <button
                 onClick={() => navigate(-1)}
-                className="mb-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-gray-500 hover:text-white hover:bg-gray-800/60 transition text-xs font-bold border border-gray-150 dark:border-gray-800 hover:shadow-sm"
+                className="mb-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-gray-500 hover:text-white hover:bg-gray-800/60 transition text-xs font-bold border border-gray-150 dark:border-gray-800 hover:shadow-sm no-print"
               >
                 <ArrowLeft className="w-4 h-4" /> Quay lại
               </button>
