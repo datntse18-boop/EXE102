@@ -21,6 +21,7 @@ export default function CommandPalette() {
     { id: 'dashboard', title: 'Bàn làm việc (Dashboard)', subtitle: 'Quản lý dự án, tasks và OKRs của nhóm', icon: <Compass size={14} />, path: '/dashboard' },
     { id: 'profile', title: 'Trang cá nhân (Profile)', subtitle: 'Xem huy hiệu năng lực, gửi góp ý phản hồi', icon: <Award size={14} />, path: '/profile' },
     { id: 'irl', title: 'Đo lường IRL & Chỉ số Tài chính', subtitle: ' Steve Blank IRL checklist và tính toán CAC, LTV, Runway', icon: <TrendingUp size={14} />, path: '/startup-tools?tab=irl' },
+    { id: 'valuation', title: 'Định giá Startup & Chia Cổ phần', subtitle: 'Phương pháp Berkus định giá và phân chia cổ phần đồng sáng lập', icon: <DollarSign size={14} />, path: '/startup-tools?tab=valuation' },
     { id: 'canvas', title: 'Mô hình Canvas AI', subtitle: 'Khởi tạo mô hình kinh doanh tinh gọn bằng AI', icon: <Compass size={14} />, path: '/startup-tools?tab=canvas' },
     { id: 'pitching', title: 'AI Pitch Speech Coach (Luyện nói)', subtitle: 'Ghi âm phân tích từ đệm và vận tốc WPM', icon: <MessageSquare size={14} />, path: '/pitch-deck-advisor?tab=speech' },
     { id: 'demoday', title: 'AI Virtual Demo Day', subtitle: 'Thuyết trình gọi vốn thử trước ban giám khảo ảo', icon: <MessageSquare size={14} />, path: '/pitch-deck-advisor?tab=demoday' },
