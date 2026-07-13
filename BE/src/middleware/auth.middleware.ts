@@ -31,13 +31,22 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    let userSubscription = user.subscription
+    if (user.subscription !== 'free' && user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) < new Date()) {
+      userSubscription = 'free' as any
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { subscription: 'free' }
+      })
+    }
+
     req.user = { 
       id: decoded.id, 
       role: decoded.role, 
       email: decoded.email, 
       name: user.name, 
       classCode: user.classCode,
-      subscription: user.subscription
+      subscription: userSubscription
     }
     next()
   } catch (err) {
@@ -81,7 +90,23 @@ export const checkAiLimit = async (req: AuthRequest, res: Response, next: NextFu
       where: { userId: id },
       include: { team: true }
     })
-    const hasTeamPremium = userTeams.some(m => m.team.subscription === 'premium' || m.team.subscription === 'enterprise')
+    
+    let hasTeamPremium = false
+    for (const m of userTeams) {
+      let teamSubscription = m.team.subscription
+      if (teamSubscription !== 'free' && m.team.subscriptionExpiresAt && new Date(m.team.subscriptionExpiresAt) < new Date()) {
+        teamSubscription = 'free' as any
+        await prisma.team.update({
+          where: { id: m.team.id },
+          data: { subscription: 'free' }
+        })
+      }
+      if (teamSubscription === 'premium' || teamSubscription === 'enterprise') {
+        hasTeamPremium = true
+        break
+      }
+    }
+
     if (hasTeamPremium) {
       next()
       return
