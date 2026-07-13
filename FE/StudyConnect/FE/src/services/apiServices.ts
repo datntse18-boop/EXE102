@@ -139,6 +139,11 @@ export const teamService = {
 }
 
 export const projectService = {
+  verifyCert: async (id: string) => {
+    const { data } = await api.get(`/projects/verify-cert/${id}`)
+    return data.data
+  },
+
   getProjects: async (params?: { teamId?: string }) => {
     const { data } = await api.get('/projects', { params })
     return data.data

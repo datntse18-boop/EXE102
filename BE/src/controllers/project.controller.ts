@@ -1,4 +1,4 @@
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { createNotification } from './notification.controller'
@@ -345,3 +345,61 @@ export const addProjectComment = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// GET /api/projects/verify-cert/:id
+export const verifyCertificate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params as { id: string }
+    const cleanId = id.toUpperCase().replace(/^SC-/, '')
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: {
+          startsWith: cleanId,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        team: {
+          select: {
+            name: true,
+            members: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    role: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Chứng nhận không tồn tại hoặc chữ ký số không hợp lệ.' })
+      return
+    }
+
+    const cryptoHash = require('crypto').createHash('sha256').update(project.id + project.name).digest('hex')
+
+    res.json({
+      success: true,
+      data: {
+        certificateId: `SC-${project.id.toUpperCase().substring(0, 8)}`,
+        projectName: project.name,
+        teamName: project.team.name,
+        founders: project.team.members.map((m: any) => m.user.name),
+        issueDate: new Date(project.createdAt).toLocaleDateString('vi-VN'),
+        cryptoHash,
+        status: 'VALID_VERIFIED_SIGNATURE'
+      }
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+

@@ -255,7 +255,11 @@ export const analyzePitchDeck = async (req: AuthRequest, res: Response): Promise
       return
     }
 
-    const prompt = `Bạn là trợ lý AI chuyên gia tư vấn khởi nghiệp và là giảng viên phản biện môn EXE101/EXE201.
+    const prompt = `Bạn là trợ lý AI mô phỏng một Hội đồng Cố vấn Khởi nghiệp Đa Đại lý (Virtual AI Boardroom) bao gồm:
+1. Giám đốc Công nghệ (CTO Agent) - Chuyên gia phản biện MVP, hệ thống kỹ thuật, CDIO.
+2. Giám đốc Marketing (CMO Agent) - Chuyên gia phản biện thị trường, TAM/SAM/SOM, phễu CAC/LTV.
+3. Giám đốc Tài chính (CFO Agent) - Chuyên gia phản biện Unit Economics, Burn Rate, Runway, dòng tiền.
+
 Hãy đánh giá chi tiết bản đề cương ý tưởng / dàn ý slide Pitch Deck sau đây:
 ${content}
 
@@ -271,6 +275,11 @@ Hãy đánh giá dự án và trả về chính xác định dạng JSON (chỉ 
     "marketSize": "Nhận xét chi tiết về thị trường...",
     "problemSolution": "Nhận xét chi tiết về vấn đề và giải pháp...",
     "businessModel": "Nhận xét chi tiết về mô hình kinh doanh..."
+  },
+  "boardroom": {
+    "cto": "Nhận xét chuyên môn của CTO Agent về kiến trúc MVP, CDIO, và tính khả thi công nghệ của sản phẩm.",
+    "cmo": "Nhận xét chuyên môn của CMO Agent về tệp khách hàng, phễu Marketing, chỉ số CAC/LTV và thị trường.",
+    "cfo": "Nhận xét chuyên môn của CFO Agent về Runway, Burn Rate, cơ chế dòng tiền và điểm hòa vốn."
   },
   "suggestions": [
     "Khuyến nghị cải tiến 1 (Cụ thể cách khắc phục)",
@@ -306,6 +315,11 @@ Hãy đánh giá dự án và trả về chính xác định dạng JSON (chỉ 
           marketSize: "Thị trường đề xuất có tiềm năng tăng trưởng tốt. Cần bổ sung số liệu TAM/SAM/SOM đáng tin cậy.",
           problemSolution: "Vấn đề và giải pháp được liên kết hợp lý, tuy nhiên cần làm rõ hơn lợi thế cạnh tranh cốt lõi (Unfair Advantage).",
           businessModel: "Mô hình doanh thu trực quan, nên đưa thêm các phân tích chi tiết về dòng tiền và điểm hòa vốn."
+        },
+        boardroom: {
+          cto: "Kiến trúc công nghệ MVP cần thiết lập rõ ràng hơn. Đề xuất phát triển dạng PWA để kiểm thử Lean nhanh chóng và phân chia rõ ràng cấu trúc database trước khi mở rộng.",
+          cmo: "Thị trường TAM lớn nhưng cần phân nhỏ SAM/SOM thực tế để đo lường chi phí CAC. Phễu chuyển đổi cần được định vị rõ nét qua các kênh social.",
+          cfo: "Unit economics hiện tại tạm ổn. Hãy chú ý kiểm soát chặt chẽ chi phí cố định (Fixed Cost) để tối ưu hóa Runway sống sót lên tối thiểu 12 tháng."
         },
         suggestions: [
           "Bổ sung dẫn chứng nghiên cứu thị trường thực tế hoặc khảo sát khách hàng mục tiêu để chứng minh nỗi đau khách hàng.",

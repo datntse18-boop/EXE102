@@ -7,8 +7,10 @@ import { useAuth } from '../contexts/AuthContext'
 // Public pages
 import Landing from '../pages/public/Landing'
 import Pricing from '../pages/public/Pricing'
+import VerifyCertificate from '../pages/public/VerifyCertificate'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
+
 
 // Member pages
 import Dashboard from '../pages/member/Dashboard'
@@ -82,6 +84,7 @@ export default function AppRoutes() {
       <Route path="/" element={<PublicLayout />}> 
         <Route index element={<Landing />} />
         <Route path="pricing" element={<Pricing />} />
+        <Route path="verify-certificate" element={<VerifyCertificate />} />
       </Route>
 
       <Route element={<AuthLayout />}> 

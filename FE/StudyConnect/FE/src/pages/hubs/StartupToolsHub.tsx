@@ -6,13 +6,15 @@ import SlideOutline from '../member/SlideOutline'
 import WeeklyCheckin from '../member/WeeklyCheckin'
 import Analytics from '../member/Analytics'
 import StartupCertificate from '../member/StartupCertificate'
-import { LayoutGrid, ClipboardList, TrendingUp, FileText, CalendarDays, FilePieChart, Award } from 'lucide-react'
+import IrlDashboard from '../member/IrlDashboard'
+import { LayoutGrid, ClipboardList, TrendingUp, FileText, CalendarDays, FilePieChart, Award, ShieldCheck } from 'lucide-react'
 
 export default function StartupToolsHub() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') || 'canvas'
+  const activeTab = searchParams.get('tab') || 'irl'
 
   const tabs = [
+    { id: 'irl', label: 'Đo lường IRL & Tài chính', icon: <ShieldCheck size={14} />, component: <IrlDashboard /> },
     { id: 'canvas', label: 'Mô hình Canvas AI', icon: <LayoutGrid size={14} />, component: <CanvasGenerator /> },
     { id: 'validation', label: 'Khảo sát khách hàng', icon: <ClipboardList size={14} />, component: <CustomerValidation /> },
     { id: 'financial', label: 'Kế hoạch tài chính', icon: <TrendingUp size={14} />, component: <FinancialHub /> },

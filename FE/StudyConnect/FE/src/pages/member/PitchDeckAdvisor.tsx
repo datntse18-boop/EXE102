@@ -359,6 +359,56 @@ export default function PitchDeckAdvisor() {
                   </div>
                 </Card>
 
+                {/* Virtual Boardroom (Multi-Agent Feedback) */}
+                {results.boardroom && (
+                  <Card className="border border-orange-500/20 bg-orange-500/[0.02]">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-205 text-sm border-b dark:border-gray-800 pb-2.5 mb-4 flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-[#FF6B00]" />
+                      Hội đồng Cố vấn AI phản biện (Virtual Boardroom Agents)
+                    </h3>
+                    <div className="space-y-4 text-xs">
+                      {/* CTO Agent */}
+                      <div className="p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-150/40 dark:border-gray-800/40 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg shadow-sm text-white font-bold shrink-0">
+                          🤖
+                        </div>
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-blue-600 dark:text-blue-400 block">CTO Agent (Giám đốc Công nghệ)</span>
+                          <p className="text-gray-650 dark:text-gray-300 leading-normal font-medium italic">
+                            "{results.boardroom.cto}"
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* CMO Agent */}
+                      <div className="p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-150/40 dark:border-gray-800/40 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-lg shadow-sm text-white font-bold shrink-0">
+                          📢
+                        </div>
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-pink-600 dark:text-pink-400 block">CMO Agent (Giám đốc Marketing)</span>
+                          <p className="text-gray-650 dark:text-gray-300 leading-normal font-medium italic">
+                            "{results.boardroom.cmo}"
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* CFO Agent */}
+                      <div className="p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-150/40 dark:border-gray-800/40 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-lg shadow-sm text-white font-bold shrink-0">
+                          💰
+                        </div>
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-450 block">CFO Agent (Giám đốc Tài chính)</span>
+                          <p className="text-gray-650 dark:text-gray-300 leading-normal font-medium italic">
+                            "{results.boardroom.cfo}"
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Recommendations */}
                 <Card>
                   <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm border-b dark:border-gray-800 pb-2.5 mb-4 flex items-center gap-2">

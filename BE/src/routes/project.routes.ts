@@ -1,8 +1,11 @@
 import { Router } from 'express'
-import { getProjects, getProjectById, createProject, updateProject, deleteProject, generateCanvasAI, getPublicProjects, voteProject, getProjectComments, addProjectComment } from '../controllers/project.controller'
+import { getProjects, getProjectById, createProject, updateProject, deleteProject, generateCanvasAI, getPublicProjects, voteProject, getProjectComments, addProjectComment, verifyCertificate } from '../controllers/project.controller'
 import { authenticate } from '../middleware/auth.middleware'
 
 const router = Router()
+
+// Public verification route
+router.get('/verify-cert/:id', verifyCertificate)
 
 // Public showcase route
 router.get('/showcase/public', authenticate, getPublicProjects)
