@@ -31,7 +31,113 @@ interface ChatMessage {
 }
 
 export default function PitchDeckAdvisor() {
-  const [activeTab, setActiveTab] = useState<'advisor' | 'demoday'>('advisor')
+  const [activeTab, setActiveTab] = useState<'advisor' | 'demoday' | 'speech'>('advisor')
+
+  // --- TAB 3: AI SPEECH COACH STATE ---
+  const [isRecording, setIsRecording] = useState(false)
+  const [speechText, setSpeechText] = useState('')
+  const [speechDuration, setSpeechDuration] = useState(0)
+  const [timerInterval, setTimerInterval] = useState<any>(null)
+  
+  const [fillerCounts, setFillerCounts] = useState<Record<string, number>>({
+    'ừm': 0, 'à': 0, 'ừ': 0, 'thì': 0, 'là': 0, 'ok': 0, 'uhm': 0
+  })
+  const [wordsCount, setWordsCount] = useState(0)
+  const [wpm, setWpm] = useState(0)
+  const recognitionRef = useRef<any>(null)
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      setIsRecording(false)
+      clearInterval(timerInterval)
+    } else {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (!SpeechRecognition) {
+        alert('Trình duyệt của bạn không hỗ trợ nhận diện giọng nói Web Speech API. Hãy sử dụng Google Chrome / Microsoft Edge!')
+        return
+      }
+
+      const rec = new SpeechRecognition()
+      rec.continuous = true
+      rec.interimResults = true
+      rec.lang = 'vi-VN'
+
+      rec.onresult = (event: any) => {
+        let finalTrans = ''
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTrans += event.results[i][0].transcript + ' '
+          }
+        }
+        if (finalTrans) {
+          setSpeechText(prev => {
+            const nextText = prev + finalTrans
+            const cleanText = nextText.trim()
+            const words = cleanText ? cleanText.split(/\s+/).length : 0
+            setWordsCount(words)
+
+            const fillers = ['ừm', 'à', 'ừ', 'thì', 'là', 'ok', 'uhm']
+            const nextCounts = { 'ừm': 0, 'à': 0, 'ừ': 0, 'thì': 0, 'là': 0, 'ok': 0, 'uhm': 0 }
+            const lowerText = cleanText.toLowerCase()
+            fillers.forEach(f => {
+              const regex = new RegExp(`\\b${f}\\b`, 'g')
+              const matches = lowerText.match(regex)
+              if (matches) {
+                nextCounts[f as keyof typeof nextCounts] = matches.length
+              }
+            })
+            setFillerCounts(nextCounts)
+
+            return nextText
+          })
+        }
+      }
+
+      rec.onerror = (err: any) => {
+        console.error('Speech recognition error:', err)
+      }
+
+      rec.onend = () => {
+        setIsRecording(false)
+        clearInterval(timerInterval)
+      }
+
+      recognitionRef.current = rec
+      rec.start()
+      setIsRecording(true)
+      
+      setSpeechDuration(0)
+      const interval = setInterval(() => {
+        setSpeechDuration(prev => {
+          const nextVal = prev + 1
+          setWordsCount(currWords => {
+            if (nextVal > 0) {
+              setWpm(Math.round((currWords / nextVal) * 60))
+            }
+            return currWords
+          })
+          return nextVal
+        })
+      }, 1000)
+      setTimerInterval(interval)
+    }
+  }
+
+  const resetSpeechCoach = () => {
+    setSpeechText('')
+    setWordsCount(0)
+    setWpm(0)
+    setSpeechDuration(0)
+    setFillerCounts({ 'ừm': 0, 'à': 0, 'ừ': 0, 'thì': 0, 'là': 0, 'ok': 0, 'uhm': 0 })
+    if (isRecording && recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setIsRecording(false)
+    clearInterval(timerInterval)
+  }
 
   // --- TAB 1: PITCH DECK ADVISOR STATE ---
   const [content, setContent] = useState('')
@@ -212,10 +318,10 @@ export default function PitchDeckAdvisor() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 gap-6">
+      <div className="flex border-b border-gray-200 dark:border-gray-800 gap-6 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('advisor')}
-          className={`pb-3 text-sm font-bold transition-all ${
+          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${
             activeTab === 'advisor'
               ? 'border-b-2 border-[#FF6B00] text-[#FF6B00]'
               : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
@@ -225,13 +331,23 @@ export default function PitchDeckAdvisor() {
         </button>
         <button
           onClick={() => setActiveTab('demoday')}
-          className={`pb-3 text-sm font-bold transition-all flex items-center gap-1.5 ${
+          className={`pb-3 text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
             activeTab === 'demoday'
               ? 'border-b-2 border-[#FF6B00] text-[#FF6B00]'
               : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           🎙️ AI Virtual Demo Day (Thuyết trình thử)
+        </button>
+        <button
+          onClick={() => setActiveTab('speech')}
+          className={`pb-3 text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+            activeTab === 'speech'
+              ? 'border-b-2 border-[#FF6B00] text-[#FF6B00]'
+              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          🎙️ AI Pitch Speech Coach (Luyện nói)
         </button>
       </div>
 
@@ -840,6 +956,146 @@ export default function PitchDeckAdvisor() {
           )}
         </div>
       )}
+
+      {/* --- TAB 3: AI PITCH SPEECH COACH --- */}
+      {activeTab === 'speech' && (
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Controls & Metrics (1 col) */}
+          <div className="md:col-span-1 space-y-6">
+            <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40 text-center space-y-6">
+              <div className="space-y-2">
+                <h3 className="font-extrabold text-gray-900 dark:text-white text-sm">
+                  Luyện Tập Giọng Nói AI
+                </h3>
+                <p className="text-[10px] text-gray-450 dark:text-gray-500 font-medium leading-relaxed">
+                  Nhấp vào nút micro bên dưới và bắt đầu thuyết trình. AI sẽ phân tích tốc độ nói (WPM) và đếm các từ đệm vô nghĩa.
+                </p>
+              </div>
+
+              {/* Glowing Mic button */}
+              <div className="flex justify-center items-center py-4">
+                <button
+                  onClick={toggleRecording}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
+                    isRecording
+                      ? 'bg-red-500 hover:bg-red-650 text-white animate-pulse shadow-red-500/20 border-4 border-red-200 dark:border-red-900'
+                      : 'bg-gradient-to-r from-orange-500 to-[#FF6B00] hover:from-orange-600 hover:to-orange-550 text-white shadow-orange-500/20 border-4 border-orange-100 dark:border-orange-950'
+                  }`}
+                >
+                  <span className="text-3xl">🎙️</span>
+                </button>
+              </div>
+
+              <div className="text-xs font-bold text-gray-800 dark:text-gray-300">
+                {isRecording ? (
+                  <span className="text-red-500 flex items-center justify-center gap-1.5 animate-pulse">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                    Đang ghi âm thuyết trình...
+                  </span>
+                ) : (
+                  'Micro đang tắt. Nhấp để bắt đầu.'
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={resetSpeechCoach}
+                  className="px-4 py-2 border border-gray-250 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-[11px] font-bold transition text-gray-500"
+                >
+                  Đặt lại
+                </button>
+              </div>
+            </Card>
+
+            {/* Speaking Pace & Stats Card */}
+            <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40 space-y-4">
+              <h4 className="font-extrabold text-gray-900 dark:text-white text-xs uppercase tracking-wider border-b dark:border-gray-800 pb-2.5">
+                Nhịp Điệu & Thời Gian
+              </h4>
+
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="p-3 bg-gray-50/50 dark:bg-[#1C1C28]/40 border border-gray-150/40 dark:border-gray-850/40 rounded-xl">
+                  <span className="text-[9px] font-bold text-gray-450 uppercase block">Thời gian nói</span>
+                  <span className="text-lg font-black text-gray-850 dark:text-white block mt-1">
+                    {Math.floor(speechDuration / 60).toString().padStart(2, '0')}:{(speechDuration % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50/50 dark:bg-[#1C1C28]/40 border border-gray-150/40 dark:border-gray-850/40 rounded-xl">
+                  <span className="text-[9px] font-bold text-gray-450 uppercase block">Tổng số từ</span>
+                  <span className="text-lg font-black text-[#FF6B00] block mt-1">{wordsCount} từ</span>
+                </div>
+              </div>
+
+              {/* WPM Pacing Indicator */}
+              <div className="p-3.5 bg-gray-50/50 dark:bg-[#1C1C28]/30 rounded-xl border dark:border-gray-850 space-y-2">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-500">Tốc độ (WPM):</span>
+                  <span className="text-gray-900 dark:text-white font-black">{wpm} WPM</span>
+                </div>
+                
+                {wordsCount > 5 && (
+                  <div className={`p-2 rounded-lg text-[10px] text-center font-extrabold border ${
+                    wpm > 155 
+                      ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                      : wpm < 105
+                      ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                      : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                  }`}>
+                    {wpm > 155 
+                      ? 'Nói quá nhanh! Hãy thở sâu và giảm tốc độ.' 
+                      : wpm < 105
+                      ? 'Nói hơi chậm. Hãy gia tăng nhịp điệu hào hứng.'
+                      : 'Tốc độ hoàn hảo! Giữ vững nhịp độ này.'}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Transcript & Filler words analysis (2 cols) */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Filler analysis */}
+            <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40">
+              <h3 className="font-extrabold text-gray-900 dark:text-white text-xs uppercase tracking-wider border-b dark:border-gray-800 pb-2.5 mb-4">
+                Phân Tích Từ Đệm Vô Nghĩa (Filler Words)
+              </h3>
+              
+              <div className="grid grid-cols-4 gap-3">
+                {Object.entries(fillerCounts).map(([word, count]) => (
+                  <div 
+                    key={word} 
+                    className={`p-3 rounded-2xl border text-center transition-all ${
+                      count > 0 
+                        ? 'bg-red-500/[0.03] border-red-500/20 text-red-500 shadow-sm'
+                        : 'bg-gray-50/50 dark:bg-gray-950/20 border-gray-150/30 dark:border-gray-800/30 text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    <span className="text-xs font-black block">{word}</span>
+                    <span className="text-lg font-black block mt-1">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Transcript */}
+            <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40">
+              <h3 className="font-extrabold text-gray-900 dark:text-white text-xs uppercase tracking-wider border-b dark:border-gray-800 pb-2.5 mb-4">
+                Văn bản thuyết trình của bạn (Real-time Transcript)
+              </h3>
+
+              <div className="min-h-[200px] max-h-[300px] overflow-y-auto bg-gray-50/50 dark:bg-black/20 border border-gray-100 dark:border-gray-850/40 p-4 rounded-2xl text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed select-text">
+                {speechText.trim() ? (
+                  speechText
+                ) : (
+                  <span className="text-gray-400 italic">Văn bản thuyết trình sẽ hiển thị tại đây khi bạn nói...</span>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
