@@ -117,11 +117,18 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
     })
 
     const duration = payment.durationMonths || 1
-    const expiresAt = new Date()
-    expiresAt.setMonth(expiresAt.getMonth() + duration)
+    let expiresAt = new Date()
 
     // Upgrade subscription (Team or User)
     if (payment.teamId) {
+      const team = await prisma.team.findUnique({ where: { id: payment.teamId } })
+      let baseDate = new Date()
+      if (team && team.subscriptionExpiresAt && new Date(team.subscriptionExpiresAt) > baseDate) {
+        baseDate = new Date(team.subscriptionExpiresAt)
+      }
+      expiresAt = new Date(baseDate)
+      expiresAt.setMonth(expiresAt.getMonth() + duration)
+
       await prisma.team.update({
         where: { id: payment.teamId },
         data: { 
@@ -135,11 +142,26 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         data: {
           userId: payment.userId,
           title: '🎉 Thanh toán gói Nhóm thành công!',
-          content: `Gói Premium của nhóm đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Gói Premium của nhóm đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
           link: '/pricing',
         },
       })
+
+      console.log(`\n======================================================`)
+      console.log(`[EMAIL CONFIRMATION MOCK] Gửi email xác nhận gói Nhóm`)
+      console.log(`Đến: ${updated.user.email}`)
+      console.log(`Nội dung: Gói nhóm Premium đã được kích hoạt.`)
+      console.log(`Hạn sử dụng mới: ${expiresAt.toLocaleString('vi-VN')}`)
+      console.log(`======================================================\n`)
     } else {
+      const user = await prisma.user.findUnique({ where: { id: payment.userId } })
+      let baseDate = new Date()
+      if (user && user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > baseDate) {
+        baseDate = new Date(user.subscriptionExpiresAt)
+      }
+      expiresAt = new Date(baseDate)
+      expiresAt.setMonth(expiresAt.getMonth() + duration)
+
       await prisma.user.update({
         where: { id: payment.userId },
         data: { 
@@ -153,10 +175,17 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         data: {
           userId: payment.userId,
           title: '🎉 Thanh toán xác nhận thành công!',
-          content: `Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
           link: '/pricing',
         },
       })
+
+      console.log(`\n======================================================`)
+      console.log(`[EMAIL CONFIRMATION MOCK] Gửi email xác nhận nâng cấp`)
+      console.log(`Đến: ${updated.user.email}`)
+      console.log(`Nội dung: Gói Premium Pro của bạn đã kích hoạt thành công.`)
+      console.log(`Hạn sử dụng mới: ${expiresAt.toLocaleString('vi-VN')}`)
+      console.log(`======================================================\n`)
     }
 
     res.json({ success: true, data: updated, message: 'Payment confirmed & subscription upgraded' })
@@ -263,11 +292,22 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
     })
 
     const duration = payment.durationMonths || 1
-    const expiresAt = new Date()
-    expiresAt.setMonth(expiresAt.getMonth() + duration)
+    let expiresAt = new Date()
+
+    // Retrieve user for email logging
+    const userObj = await prisma.user.findUnique({ where: { id: payment.userId } })
+    const userEmail = userObj?.email || 'N/A'
 
     // Upgrade subscription (Team or User)
     if (payment.teamId) {
+      const team = await prisma.team.findUnique({ where: { id: payment.teamId } })
+      let baseDate = new Date()
+      if (team && team.subscriptionExpiresAt && new Date(team.subscriptionExpiresAt) > baseDate) {
+        baseDate = new Date(team.subscriptionExpiresAt)
+      }
+      expiresAt = new Date(baseDate)
+      expiresAt.setMonth(expiresAt.getMonth() + duration)
+
       await prisma.team.update({
         where: { id: payment.teamId },
         data: { 
@@ -281,11 +321,25 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói Nhóm thành công!',
-          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói Premium cho nhóm của bạn tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói Premium cho nhóm của bạn tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
           link: '/pricing',
         }
       })
+
+      console.log(`\n======================================================`)
+      console.log(`[EMAIL CONFIRMATION MOCK] Gửi email xác nhận webhook gói Nhóm`)
+      console.log(`Đến: ${userEmail}`)
+      console.log(`Nội dung: Gói nhóm Premium đã kích hoạt thành công qua thanh toán ngân hàng tự động.`)
+      console.log(`Hạn sử dụng mới: ${expiresAt.toLocaleString('vi-VN')}`)
+      console.log(`======================================================\n`)
     } else {
+      let baseDate = new Date()
+      if (userObj && userObj.subscriptionExpiresAt && new Date(userObj.subscriptionExpiresAt) > baseDate) {
+        baseDate = new Date(userObj.subscriptionExpiresAt)
+      }
+      expiresAt = new Date(baseDate)
+      expiresAt.setMonth(expiresAt.getMonth() + duration)
+
       await prisma.user.update({
         where: { id: payment.userId },
         data: { 
@@ -299,10 +353,17 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói thành công!',
-          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn một cách tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn một cách tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
           link: '/pricing',
         }
       })
+
+      console.log(`\n======================================================`)
+      console.log(`[EMAIL CONFIRMATION MOCK] Gửi email xác nhận webhook nâng cấp`)
+      console.log(`Đến: ${userEmail}`)
+      console.log(`Nội dung: Gói Premium Pro của bạn đã kích hoạt thành công qua thanh toán ngân hàng tự động.`)
+      console.log(`Hạn sử dụng mới: ${expiresAt.toLocaleString('vi-VN')}`)
+      console.log(`======================================================\n`)
     }
 
     res.json({ success: true, message: `Payment ${txId} confirmed & subscription upgraded automatically` })

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { userService, feedbackService } from '../../services/apiServices'
+import { userService, feedbackService, paymentService } from '../../services/apiServices'
 import Card from '../../components/cards/Card'
-import { Mail, Sparkles, Clock, BookOpen, Code, Award, Loader2, MessageSquare, Send, Check } from 'lucide-react'
+import { Mail, Sparkles, Clock, BookOpen, Code, Award, Loader2, MessageSquare, Send, Check, CreditCard, Download } from 'lucide-react'
 
 export default function Profile() {
   const { user, role, updateUserData } = useAuth()
@@ -22,7 +22,12 @@ export default function Profile() {
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false)
 
+  // Payment states
+  const [payments, setPayments] = useState<any[]>([])
+  const [loadingPayments, setLoadingPayments] = useState(false)
+
   const loadFeedbacks = async () => {
+    setLoadingPayments(true) // trigger parent loading state if needed
     setLoadingFeedbacks(true)
     try {
       const data = await feedbackService.getMyFeedbacks()
@@ -34,8 +39,21 @@ export default function Profile() {
     }
   }
 
+  const loadPayments = async () => {
+    setLoadingPayments(true)
+    try {
+      const data = await paymentService.getPayments()
+      setPayments(data)
+    } catch (err) {
+      console.error('Failed to load payments:', err)
+    } finally {
+      setLoadingPayments(false)
+    }
+  }
+
   useEffect(() => {
     loadFeedbacks()
+    loadPayments()
   }, [])
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
@@ -368,6 +386,94 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      {/* Payment History Section */}
+      <Card className="mt-6 bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-800/80">
+        <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-850 pb-3 mb-4">
+          <CreditCard className="w-5 h-5 text-[#FF6B00]" />
+          <h3 className="font-extrabold text-gray-900 dark:text-white text-sm">
+            Lịch sử giao dịch & Quản lý gói đăng ký
+          </h3>
+        </div>
+
+        {loadingPayments ? (
+          <div className="flex items-center justify-center py-8 text-gray-500 text-xs">
+            <Loader2 className="w-4 h-4 animate-spin text-[#FF6B00] mr-2" /> Đang tải lịch sử thanh toán...
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="text-center py-10 text-gray-400 dark:text-gray-650 text-xs border-2 border-dashed border-gray-100 dark:border-gray-800/40 rounded-2xl">
+            Bạn chưa thực hiện bất kỳ giao dịch nâng cấp nào.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-850 text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                  <th className="py-3 px-4">Gói dịch vụ</th>
+                  <th className="py-3 px-4">Mã GD</th>
+                  <th className="py-3 px-4">Số tiền</th>
+                  <th className="py-3 px-4">Hạn dùng</th>
+                  <th className="py-3 px-4">Trạng thái</th>
+                  <th className="py-3 px-4 text-center">Hoá đơn</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-850 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                {payments.map((p: any) => {
+                  const createdDate = new Date(p.createdAt)
+                  const expDate = new Date(createdDate)
+                  expDate.setMonth(expDate.getMonth() + (p.durationMonths || 1))
+
+                  return (
+                    <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                      <td className="py-3 px-4">
+                        <span className="font-black text-gray-850 dark:text-white block">
+                          {p.plan === 'premium' ? 'Premium Pro' : 'Enterprise'}
+                        </span>
+                        <span className="text-[9px] text-gray-400 font-bold block mt-0.5">
+                          Chu kỳ: {p.durationMonths || 1} tháng
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[10px] text-gray-550 dark:text-gray-400">
+                        {p.txId || 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 font-black text-gray-900 dark:text-white">
+                        {(p.amount || 0).toLocaleString('vi-VN')} đ
+                      </td>
+                      <td className="py-3 px-4 text-[10px] text-gray-550 dark:text-gray-400">
+                        {p.status === 'completed' ? expDate.toLocaleDateString('vi-VN') : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {p.status === 'completed' ? (
+                          <span className="inline-block bg-green-500/10 text-green-500 border border-green-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase">
+                            Thành công
+                          </span>
+                        ) : p.status === 'pending' ? (
+                          <span className="inline-block bg-orange-500/10 text-[#FF6B00] border border-orange-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase">
+                            Chờ duyệt
+                          </span>
+                        ) : (
+                          <span className="inline-block bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase">
+                            Từ chối
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => downloadUserInvoice(p)}
+                          className="p-2 bg-gray-100 dark:bg-[#1C1C28] text-gray-650 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition cursor-pointer inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Tải
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {/* Feedback Section */}
       <Card className="mt-8 bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-800/80">
