@@ -272,6 +272,11 @@ export const paymentService = {
     const { data } = await api.get('/payments/stats')
     return data.data
   },
+
+  simulateWebhook: async (txId: string, amount: number) => {
+    const { data } = await api.post('/payments/webhook', { transactionContent: txId, amountIn: amount })
+    return data
+  },
 }
 
 
