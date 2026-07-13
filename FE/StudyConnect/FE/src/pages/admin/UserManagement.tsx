@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react'
 import Card from '../../components/cards/Card'
 import { userService } from '../../services/apiServices'
+import { 
+  Users, 
+  UserCheck, 
+  UserMinus, 
+  Trash2, 
+  UserPlus, 
+  Search, 
+  Filter, 
+  Loader2, 
+  Award,
+  Sparkles,
+  ShieldAlert
+} from 'lucide-react'
 
 export default function UserManagement() {
   const [users, setUsers] = useState<any[]>([])
@@ -118,48 +131,60 @@ export default function UserManagement() {
   const activeCount = users.filter(u => u.status === 'active').length
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6 animate-fadeIn pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">User Management</h1>
-          <p className="text-xs text-gray-400 mt-1">Quản lý tài khoản Giảng viên, Dean (Leader) và Sinh viên trong hệ thống</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">Quản Lý Người Dùng 👥</h1>
+          <p className="text-xs text-gray-400 mt-1 font-medium">
+            Quản lý tài khoản Giảng viên, Dean (Leader) và Sinh viên trong hệ thống StudyConnect.
+          </p>
         </div>
         <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="px-4 py-2.5 bg-[#FF6B00] text-white font-bold text-xs rounded-xl hover:bg-[#E85A00] transition flex items-center gap-1.5 shadow-md shadow-orange-500/10 cursor-pointer"
+          onClick={() => {
+            setCreateError('')
+            setCreateSuccess('')
+            setShowCreateForm(!showCreateForm)
+          }}
+          className="px-5 py-2.5 bg-[#FF6B00] text-white font-bold text-xs rounded-xl hover:bg-orange-600 transition flex items-center gap-1.5 shadow-md shadow-orange-500/10 cursor-pointer shrink-0"
         >
-          {showCreateForm ? 'Đóng form' : '+ Tạo tài khoản mới'}
+          <UserPlus className="w-4 h-4" />
+          {showCreateForm ? 'Đóng Form' : 'Tạo thành viên mới'}
         </button>
       </div>
 
       {/* Statistics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: 'Tổng số người dùng', value: totalUsers, icon: '👥', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-          { label: 'Sinh viên (Member)', value: studentCount, icon: '🎓', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
-          { label: 'Giảng viên (Manager)', value: managerCount, icon: '👩‍🔬', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
-          { label: 'Dean / Leader', value: leaderCount, icon: '👩‍🎓', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-          { label: 'Đang hoạt động', value: activeCount, icon: '✅', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
+          { label: 'Tổng số tài khoản', value: totalUsers, icon: '👥', color: 'text-blue-500 bg-blue-500/5 border-blue-500/10' },
+          { label: 'Sinh viên (Member)', value: studentCount, icon: '🎓', color: 'text-orange-500 bg-orange-500/5 border-orange-500/10' },
+          { label: 'Giảng viên (Manager)', value: managerCount, icon: '👩‍🏫', color: 'text-emerald-500 bg-emerald-500/5 border-emerald-500/10' },
+          { label: 'Dean / Leader', value: leaderCount, icon: '👩‍🎓', color: 'text-purple-500 bg-purple-500/5 border-purple-500/10' },
+          { label: 'Đang hoạt động', value: activeCount, icon: '✅', color: 'text-green-500 bg-green-500/5 border-green-500/10' },
         ].map(s => (
           <div key={s.label} className={`border rounded-2xl p-4 bg-white dark:bg-[#13131C] ${s.color} flex flex-col justify-between h-24 shadow-sm`}>
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{s.label}</span>
-              <span className="text-lg">{s.icon}</span>
+              <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{s.label}</span>
+              <span className="text-base">{s.icon}</span>
             </div>
-            <span className="text-2xl font-black text-gray-800 dark:text-white mt-2">{s.value}</span>
+            <span className="text-xl font-black text-gray-800 dark:text-white mt-2">{s.value}</span>
           </div>
         ))}
       </div>
 
+      {/* Create User Form */}
       {showCreateForm && (
-        <Card className="mb-6 border-t-4 border-[#FF6B00] animate-fadeIn">
-          <h3 className="text-sm font-extrabold text-gray-800 dark:text-white mb-4">Tạo tài khoản thành viên mới</h3>
+        <Card className="border border-orange-500/20 bg-orange-500/[0.01] animate-fadeIn">
+          <h3 className="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+            <UserPlus className="w-4 h-4 text-[#FF6B00]" />
+            Tạo tài khoản thành viên mới
+          </h3>
           
           {createError && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-xs border border-red-200 font-bold">{createError}</div>
+            <div className="mb-4 p-3 rounded-xl bg-red-500/10 text-red-400 text-xs border border-red-500/20 font-bold">{createError}</div>
           )}
           {createSuccess && (
-            <div className="mb-4 p-3 rounded-xl bg-green-50 text-green-700 text-xs border border-green-200 font-bold">{createSuccess}</div>
+            <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20 font-bold">{createSuccess}</div>
           )}
 
           <form onSubmit={handleCreateUser} className="space-y-4">
@@ -172,7 +197,7 @@ export default function UserManagement() {
                   placeholder="Nguyễn Văn A"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-805 dark:text-gray-200 font-medium"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white font-semibold"
                 />
               </div>
               
@@ -184,7 +209,7 @@ export default function UserManagement() {
                   placeholder="email@example.com"
                   value={newEmail}
                   onChange={e => setNewEmail(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-805 dark:text-gray-200 font-medium"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white font-semibold"
                 />
               </div>
 
@@ -196,7 +221,7 @@ export default function UserManagement() {
                   placeholder="Mật khẩu tài khoản..."
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-850 dark:text-gray-200 font-medium"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white font-semibold"
                 />
               </div>
 
@@ -205,7 +230,7 @@ export default function UserManagement() {
                 <select
                   value={newRole}
                   onChange={e => setNewRole(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-800 dark:text-gray-200 font-bold"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white font-semibold"
                 >
                   <option value="member">Sinh viên (Member)</option>
                   <option value="leader">Quản lý (Dean / Leader)</option>
@@ -220,7 +245,7 @@ export default function UserManagement() {
                   placeholder="Ví dụ: CLASS-EXE-101"
                   value={newClassCode}
                   onChange={e => setNewClassCode(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-850 dark:text-gray-200 font-medium"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-850 dark:text-white font-semibold"
                 />
               </div>
 
@@ -229,7 +254,7 @@ export default function UserManagement() {
                 <select
                   value={newSubscription}
                   onChange={e => setNewSubscription(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#13131C] text-gray-800 dark:text-gray-200 font-bold"
+                  className="w-full border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-white dark:bg-[#1C1C28] text-gray-800 dark:text-white font-semibold"
                 >
                   <option value="free">Free</option>
                   <option value="premium">Premium</option>
@@ -242,8 +267,9 @@ export default function UserManagement() {
               <button
                 type="submit"
                 disabled={creatingUser}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FF801A] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition disabled:opacity-60 text-xs cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#FF6B00] to-orange-600 text-white font-bold rounded-xl shadow transition disabled:opacity-60 text-xs flex items-center gap-1.5"
               >
+                {creatingUser ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
                 {creatingUser ? 'Đang tạo...' : 'Lưu tài khoản'}
               </button>
             </div>
@@ -251,70 +277,86 @@ export default function UserManagement() {
         </Card>
       )}
 
-      <Card className="mb-6">
+      {/* Filters card */}
+      <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40">
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="text-sm font-medium">Search Users</label>
+            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+              <Search className="w-3.5 h-3.5" /> Tìm kiếm thành viên
+            </label>
             <input
               type="text"
-              placeholder="Name or email..."
+              placeholder="Nhập tên hoặc email..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full mt-1 border rounded px-3 py-2 focus:outline-none focus:border-[#FF6B00]"
+              className="w-full mt-1.5 border border-gray-200 dark:border-gray-750 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-gray-50/50 dark:bg-[#1C1C28] text-gray-900 dark:text-white"
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Filter by Role</label>
+            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5" /> Lọc theo Vai Trò
+            </label>
             <select
               value={roleFilter}
               onChange={e => setRoleFilter(e.target.value)}
-              className="w-full mt-1 border rounded px-3 py-2 focus:outline-none focus:border-[#FF6B00]"
+              className="w-full mt-1.5 border border-gray-200 dark:border-gray-750 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#FF6B00] bg-gray-50/50 dark:bg-[#1C1C28] text-gray-900 dark:text-white font-bold"
             >
-              <option value="all">All Roles</option>
-              <option value="member">Member</option>
-              <option value="leader">Leader</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
+              <option value="all">Tất cả vai trò</option>
+              <option value="member">Học viên (Member)</option>
+              <option value="leader">Dean / Leader</option>
+              <option value="manager">Giảng viên (Manager)</option>
+              <option value="admin">System Admin</option>
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium">Results</label>
-            <div className="mt-1 px-3 py-2 bg-[#FFF4E8] rounded text-[#FF6B00] font-bold">
-              {loading ? '...' : `${users.length} users`}
+            <label className="text-[10px] font-bold text-gray-500 uppercase block">Kết quả truy vấn</label>
+            <div className="w-full mt-1.5 px-4 py-2.5 bg-orange-500/10 border border-orange-500/20 text-[#FF6B00] rounded-xl text-xs font-black text-center">
+              {loading ? 'Đang truy xuất...' : `${users.length} tài khoản`}
             </div>
           </div>
         </div>
       </Card>
 
-      <Card>
+      {/* Users table list */}
+      <Card className="bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40">
         <div className="overflow-x-auto">
           {loading ? (
-            <p className="text-center text-gray-400 py-8">Đang tải...</p>
+            <div className="flex flex-col items-center py-12 text-gray-400 text-xs">
+              <Loader2 className="w-6 h-6 animate-spin text-[#FF6B00] mb-2" /> Đang lấy danh sách người dùng...
+            </div>
           ) : (
-            <table className="w-full">
-              <thead className="border-b-2 border-[#FF6B00]">
-                <tr>
-                  <th className="text-left p-3 text-sm font-semibold">User</th>
-                  <th className="text-left p-3 text-sm font-semibold">Email</th>
-                  <th className="text-left p-3 text-sm font-semibold">Role</th>
-                  <th className="text-left p-3 text-sm font-semibold">Subscription</th>
-                  <th className="text-left p-3 text-sm font-semibold">Status</th>
-                  <th className="text-left p-3 text-sm font-semibold">Actions</th>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 uppercase text-[10px] font-bold tracking-wider">
+                  <th className="text-left p-3">Thành viên</th>
+                  <th className="text-left p-3">Thông tin liên lạc</th>
+                  <th className="text-left p-3">Vai trò (Role)</th>
+                  <th className="text-left p-3">Gói (Sub)</th>
+                  <th className="text-left p-3">Trạng thái</th>
+                  <th className="text-right p-3">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-850/40">
                 {users.map(user => (
-                  <tr key={user.id} className={`border-b hover:bg-[#FFF4E8] ${updating === user.id ? 'opacity-50' : ''}`}>
+                  <tr 
+                    key={user.id} 
+                    className={`hover:bg-gray-50/40 dark:hover:bg-[#1C1C28]/20 transition ${updating === user.id ? 'opacity-40' : ''}`}
+                  >
                     <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{user.avatar || '👤'}</span>
-                        <strong>{user.name}</strong>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg bg-gray-100 dark:bg-[#1C1C28] w-8 h-8 rounded-full flex items-center justify-center border dark:border-gray-800">
+                          {user.avatar || '👤'}
+                        </span>
+                        <strong className="text-gray-900 dark:text-white font-extrabold">{user.name}</strong>
                       </div>
                     </td>
-                    <td className="p-3 text-sm text-gray-600">{user.email}</td>
+                    <td className="p-3">
+                      <div className="text-gray-900 dark:text-gray-300 font-medium">{user.email}</div>
+                      {user.phone && <div className="text-[10px] text-gray-450 dark:text-gray-500 font-mono mt-0.5">{user.phone}</div>}
+                    </td>
                     <td className="p-3">
                       {user.role === 'admin' ? (
-                        <span className="px-2.5 py-1 text-xs font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
+                        <span className="px-2.5 py-1 text-[9px] font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
                           System Admin
                         </span>
                       ) : (
@@ -322,7 +364,7 @@ export default function UserManagement() {
                           value={user.role}
                           onChange={e => handleChangeRole(user.id, e.target.value)}
                           disabled={updating === user.id}
-                          className="border rounded px-2 py-1 text-sm capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-700 dark:text-gray-300 font-bold"
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-[11px] capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-800 dark:text-gray-300 font-extrabold"
                         >
                           <option value="member">Member</option>
                           <option value="leader">Leader</option>
@@ -332,7 +374,7 @@ export default function UserManagement() {
                     </td>
                     <td className="p-3">
                       {user.role === 'admin' ? (
-                        <span className="px-2.5 py-1 text-xs font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
+                        <span className="px-2.5 py-1 text-[9px] font-black text-[#FF6B00] bg-orange-500/10 border border-orange-500/20 rounded-lg uppercase tracking-wider">
                           Enterprise
                         </span>
                       ) : (
@@ -340,7 +382,7 @@ export default function UserManagement() {
                           value={user.subscription}
                           onChange={e => handleChangeSubscription(user.id, e.target.value)}
                           disabled={updating === user.id}
-                          className="border rounded px-2 py-1 text-sm capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-700 dark:text-gray-300 font-bold"
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-[11px] capitalize focus:outline-none focus:border-[#FF6B00] bg-transparent text-gray-800 dark:text-gray-300 font-extrabold"
                         >
                           <option value="free">Free</option>
                           <option value="premium">Premium</option>
@@ -349,25 +391,37 @@ export default function UserManagement() {
                       )}
                     </td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-xs ${user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {user.status}
-                      </span>
+                      {user.status === 'active' ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/25 text-[9px] font-bold">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/25 text-[9px] font-bold">
+                          Suspended
+                        </span>
+                      )}
                     </td>
                     <td className="p-3">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 justify-end">
                         <button
                           onClick={() => handleSuspend(user.id)}
                           disabled={updating === user.id || user.role === 'admin'}
-                          className={`px-3 py-1 rounded text-xs font-medium transition ${user.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400' : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:text-green-400'} disabled:opacity-50`}
+                          className={`p-1.5 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 ${
+                            user.status === 'active' 
+                              ? 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-950 dark:text-red-400 dark:hover:bg-red-950/20' 
+                              : 'border-green-200 text-green-600 hover:bg-green-50 dark:border-green-950 dark:text-green-400 dark:hover:bg-green-950/20'
+                          } disabled:opacity-50`}
                         >
-                          {user.status === 'active' ? 'Suspend' : 'Activate'}
+                          {user.status === 'active' ? <UserMinus className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          {user.status === 'active' ? 'Khóa' : 'Kích hoạt'}
                         </button>
                         {user.role !== 'admin' && (
                           <button
                             onClick={() => handleDeleteUser(user.id, user.name)}
                             disabled={updating === user.id}
-                            className="px-3 py-1 bg-red-100 hover:bg-red-600 text-red-650 hover:text-white dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-600 rounded text-xs font-medium transition disabled:opacity-50"
+                            className="p-1.5 bg-red-50 hover:bg-red-600 border border-red-100 text-red-650 hover:text-white dark:bg-red-950/20 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-600 rounded-lg text-[10px] font-bold transition flex items-center gap-1 disabled:opacity-50"
                           >
+                            <Trash2 className="w-3.5 h-3.5" />
                             Xóa
                           </button>
                         )}
