@@ -278,6 +278,11 @@ export const paymentService = {
     const { data } = await api.post('/payments/webhook', { transactionContent: txId, amountIn: amount })
     return data
   },
+
+  activateTrial: async () => {
+    const { data } = await api.post('/payments/trial')
+    return data.data
+  },
 }
 
 

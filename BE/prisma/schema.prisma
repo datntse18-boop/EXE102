@@ -63,6 +63,7 @@ model User {
   status       String           @default("active") // active | suspended
   subscription SubscriptionPlan @default(free)
   subscriptionExpiresAt DateTime?
+  hasUsedTrial  Boolean          @default(false)
   classCode    String?          // Unique class code for lecturers or joined class code for students
   skills       String?          // Professional skills (comma separated)
   desiredRole  String?          // Desired role in team

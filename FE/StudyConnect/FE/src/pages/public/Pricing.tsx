@@ -549,7 +549,38 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
         </div>
       </div>
 
-      </div>
+      {/* 3-Day Free Trial Promotion Banner */}
+      {user && !user.hasUsedTrial && user.subscription === 'free' && (
+        <div className="max-w-2xl mx-auto p-6 bg-gradient-to-r from-purple-900/40 via-indigo-950/30 to-purple-900/40 border border-purple-500/30 rounded-3xl text-center space-y-4 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10 space-y-2">
+            <span className="bg-purple-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md inline-block">
+              🔥 Khuyến mại đặc biệt
+            </span>
+            <h3 className="text-lg font-black text-white">Trải nghiệm Full quyền lợi Premium 3 ngày MIỄN PHÍ</h3>
+            <p className="text-xs text-purple-200/80 max-w-md mx-auto leading-relaxed">
+              Bạn chưa quyết định nâng cấp? Trải nghiệm ngay toàn bộ các tính năng AI, tạo ý tưởng, kết hợp nhóm và xem báo cáo phân tích chuyên sâu hoàn toàn miễn phí trong 3 ngày.
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const updated = await paymentService.activateTrial()
+                    updateUserData(updated)
+                    alert('Kích hoạt dùng thử 3 ngày thành công! 🎉 Chúc bạn có trải nghiệm tuyệt vời.')
+                  } catch (err: any) {
+                    alert(err.response?.data?.message || 'Kích hoạt dùng thử thất bại. Vui lòng thử lại.')
+                  }
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/20 cursor-pointer"
+              >
+                ⚡ Kích hoạt dùng thử ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Billing Duration Selector with Savings Banner */}
       <div className="max-w-md mx-auto space-y-4">

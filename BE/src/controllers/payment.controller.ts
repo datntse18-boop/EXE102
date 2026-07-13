@@ -311,3 +311,64 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ success: false, message: 'Webhook processing failed' })
   }
 }
+
+// POST /api/payments/trial — Activate 3-day free trial (once per user)
+export const activateTrial = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' })
+      return
+    }
+
+    if (user.hasUsedTrial) {
+      res.status(400).json({ success: false, message: 'Bạn đã sử dụng gói dùng thử 3 ngày rồi. Mỗi tài khoản chỉ được dùng thử 1 lần duy nhất.' })
+      return
+    }
+
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 3)
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        subscription: 'premium',
+        subscriptionExpiresAt: expiresAt,
+        hasUsedTrial: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatar: true,
+        subscription: true,
+        subscriptionExpiresAt: true,
+        hasUsedTrial: true,
+        status: true,
+        classCode: true,
+      }
+    })
+
+    // Create system notification
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: '🎉 Kích hoạt dùng thử 3 ngày thành công!',
+        content: `Chúc mừng bạn! Gói Premium dùng thử 3 ngày đã được kích hoạt. Hạn sử dụng đến: ${expiresAt.toLocaleString('vi-VN')}.`,
+        link: '/pricing',
+      }
+    })
+
+    res.json({
+      success: true,
+      message: 'Kích hoạt dùng thử 3 ngày thành công! 🎉',
+      data: updatedUser
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}

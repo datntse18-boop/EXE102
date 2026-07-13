@@ -53,7 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         isVerified: false,
         verificationCode: otp
       },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, classCode: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, hasUsedTrial: true, status: true, classCode: true },
     })
 
     console.log(`\n======================================================`)
@@ -106,7 +106,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { isVerified: true, verificationCode: null },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, classCode: true }
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, hasUsedTrial: true, status: true, classCode: true }
     })
 
     const { accessToken, refreshToken } = generateTokens(updatedUser.id, updatedUser.role, updatedUser.email)
@@ -191,6 +191,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           role: user.role, avatar: user.avatar,
           subscription: user.subscription,
           subscriptionExpiresAt: user.subscriptionExpiresAt,
+          hasUsedTrial: user.hasUsedTrial,
           status: user.status,
           classCode: user.classCode,
         },
@@ -250,12 +251,46 @@ export const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, lastActive: true, createdAt: true, classCode: true, balance: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, hasUsedTrial: true, status: true, lastActive: true, createdAt: true, classCode: true, balance: true },
     })
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' })
       return
     }
+
+    // Daily warning check: if subscription expires in <= 5 days, create 1 notification today
+    if (user.subscription !== 'free' && user.subscriptionExpiresAt) {
+      const expiresAt = new Date(user.subscriptionExpiresAt)
+      const now = new Date()
+      const diffTime = expiresAt.getTime() - now.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      if (diffDays >= 0 && diffDays <= 5) {
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        
+        const titleText = `Gói Premium sắp hết hạn (Còn ${diffDays} ngày)`
+        const existing = await prisma.notification.findFirst({
+          where: {
+            userId: user.id,
+            title: titleText,
+            createdAt: { gte: todayStart }
+          }
+        })
+        
+        if (!existing) {
+          await prisma.notification.create({
+            data: {
+              userId: user.id,
+              title: titleText,
+              content: `Gói Premium Pro của bạn chỉ còn lại ${diffDays} ngày sử dụng (hết hạn ngày ${expiresAt.toLocaleDateString('vi-VN')}). Vui lòng gia hạn sớm để tránh gián đoạn các tính năng AI.`,
+              link: '/pricing'
+            }
+          })
+        }
+      }
+    }
+
     res.json({ success: true, data: user })
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' })

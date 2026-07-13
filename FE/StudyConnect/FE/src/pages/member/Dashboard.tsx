@@ -449,7 +449,7 @@ export default function Dashboard() {
     const diffTime = expiresAt.getTime() - now.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     if (diffDays <= 0) return { type: 'expired', dateLabel: expiresAt.toLocaleDateString('vi-VN') }
-    if (diffDays <= 3) return { type: 'warning', days: diffDays, dateLabel: expiresAt.toLocaleDateString('vi-VN') }
+    if (diffDays <= 5) return { type: 'warning', days: diffDays, dateLabel: expiresAt.toLocaleDateString('vi-VN') }
     return null
   }
   const expStatus = getExpirationStatus()
