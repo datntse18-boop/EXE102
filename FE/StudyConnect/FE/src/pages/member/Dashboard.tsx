@@ -442,9 +442,58 @@ export default function Dashboard() {
   }
 
   // RENDER STUDENT DASHBOARD (role === 'member')
+  const getExpirationStatus = () => {
+    if (!user || user.subscription === 'free' || !user.subscriptionExpiresAt) return null
+    const expiresAt = new Date(user.subscriptionExpiresAt)
+    const now = new Date()
+    const diffTime = expiresAt.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    if (diffDays <= 0) return { type: 'expired', dateLabel: expiresAt.toLocaleDateString('vi-VN') }
+    if (diffDays <= 3) return { type: 'warning', days: diffDays, dateLabel: expiresAt.toLocaleDateString('vi-VN') }
+    return null
+  }
+  const expStatus = getExpirationStatus()
+
   return (
     <div className="space-y-6 animate-fadeIn">
       
+      {/* Expiration Warning banners */}
+      {expStatus && expStatus.type === 'expired' && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-500 dark:text-red-400">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <span className="font-extrabold block">Gói Premium đã hết hạn! ⚠️</span>
+            <p className="mt-1 font-medium">
+              Gói dịch vụ Premium Pro của bạn đã hết hạn vào ngày <strong>{expStatus.dateLabel}</strong>. Vui lòng nâng cấp lại để tiếp tục sử dụng các tính năng nâng cao không giới hạn.
+            </p>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="mt-2.5 px-4 py-1.5 bg-red-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-650 transition cursor-pointer"
+            >
+              Gia hạn ngay
+            </button>
+          </div>
+        </div>
+      )}
+
+      {expStatus && expStatus.type === 'warning' && (
+        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-start gap-3 text-yellow-600 dark:text-yellow-450 animate-pulse">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <span className="font-extrabold block">Cảnh báo: Gói Premium sắp hết hạn! ⏰</span>
+            <p className="mt-1 font-medium">
+              Gói Premium Pro của bạn sẽ hết hạn trong vòng <strong>{expStatus.days} ngày</strong> nữa (ngày hết hạn: {expStatus.dateLabel}). Hãy gia hạn sớm để tránh gián đoạn các tính năng AI.
+            </p>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="mt-2.5 px-4 py-1.5 bg-[#FF6B00] text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-orange-600 transition cursor-pointer"
+            >
+              Gia hạn ngay
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Student Welcome Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#FF6B00] via-[#FF801A] to-[#FFA64D] text-white rounded-3xl p-8 shadow-xl border border-orange-200/20">
         <div className="relative z-10 max-w-xl">
