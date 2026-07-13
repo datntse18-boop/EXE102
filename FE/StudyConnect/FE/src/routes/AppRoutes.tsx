@@ -52,6 +52,8 @@ import UserManagement from '../pages/admin/UserManagement'
 import SubscriptionManagement from '../pages/admin/SubscriptionManagement'
 import PaymentManagement from '../pages/admin/PaymentManagement'
 import ReportManagement from '../pages/admin/ReportManagement'
+import FeedbackManagement from '../pages/admin/FeedbackManagement'
+
 
 const ProtectedRoute = ({ children, allowed }: { children: JSX.Element; allowed: string[] }) => {
   const { role } = useAuth()
@@ -136,6 +138,8 @@ export default function AppRoutes() {
         <Route path="subscriptions" element={<ProtectedRoute allowed={['admin']}><SubscriptionManagement /></ProtectedRoute>} />
         <Route path="payments" element={<ProtectedRoute allowed={['admin']}><PaymentManagement /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowed={['admin']}><ReportManagement /></ProtectedRoute>} />
+        <Route path="feedbacks" element={<ProtectedRoute allowed={['admin']}><FeedbackManagement /></ProtectedRoute>} />
+
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

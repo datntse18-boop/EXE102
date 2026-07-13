@@ -1,14 +1,19 @@
 import api from './api'
 
 export const authService = {
-  login: async (email: string, password: string) => {
-    const { data } = await api.post('/auth/login', { email, password })
+  login: async (identifier: string, password: string) => {
+    const { data } = await api.post('/auth/login', { identifier, password })
     return data.data // { user, accessToken, refreshToken }
   },
 
-  register: async (name: string, email: string, password: string) => {
-    const { data } = await api.post('/auth/register', { name, email, password })
-    return data.data
+  register: async (name: string, email: string, password: string, phone: string) => {
+    const { data } = await api.post('/auth/register', { name, email, password, phone })
+    return data
+  },
+
+  verifyOtp: async (identifier: string, code: string) => {
+    const { data } = await api.post('/auth/verify-otp', { identifier, code })
+    return data
   },
 
   logout: async () => {
@@ -334,6 +339,14 @@ export const reportService = {
     const { data } = await api.get('/reports/ai-usage')
     return data.data
   },
+
+  getRevenueStats: async (startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams()
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
+    const { data } = await api.get(`/reports/revenue-stats?${params.toString()}`)
+    return data.data
+  },
 }
 
 export const weeklyReportService = {
@@ -557,6 +570,28 @@ export const peerRadarService = {
 export const githubService = {
   simulateWebhook: async (projectId: string, commitMessage: string, repoUrl?: string) => {
     const { data } = await api.post('/github/webhook', { projectId, commitMessage, repoUrl })
+    return data
+  }
+}
+
+export const feedbackService = {
+  submitFeedback: async (content: string) => {
+    const { data } = await api.post('/feedbacks', { content })
+    return data
+  },
+
+  getMyFeedbacks: async () => {
+    const { data } = await api.get('/feedbacks/my-feedbacks')
+    return data.data
+  },
+
+  getAllFeedbacks: async () => {
+    const { data } = await api.get('/feedbacks')
+    return data.data
+  },
+
+  replyFeedback: async (feedbackId: string, reply: string) => {
+    const { data } = await api.patch(`/feedbacks/${feedbackId}/reply`, { reply })
     return data
   }
 }

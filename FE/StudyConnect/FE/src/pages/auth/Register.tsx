@@ -9,9 +9,17 @@ export default function Register() {
   const nav = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // OTP flow states
+  const [showOtpModal, setShowOtpModal] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [mockOtpMsg, setMockOtpMsg] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +30,11 @@ export default function Register() {
       setError('Họ tên phải chứa tối thiểu 3 ký tự.')
       return
     }
+    const phoneRegex = /^[0-9]{10,11}$/
+    if (!phoneRegex.test(phone)) {
+      setError('Số điện thoại không hợp lệ. Phải chứa 10-11 chữ số.')
+      return
+    }
     if (password.length < 6) {
       setError('Mật khẩu bảo mật phải có độ dài từ 6 ký tự trở lên.')
       return
@@ -29,16 +42,40 @@ export default function Register() {
 
     setLoading(true)
     try {
-      // Register using our unified api service
-      const data = await authService.register(name, email, password)
-      sessionStorage.setItem('accessToken', data.accessToken)
-      sessionStorage.setItem('refreshToken', data.refreshToken)
-      await login(email, password)
-      nav('/dashboard')
+      const data = await authService.register(name, email, password, phone)
+      if (data.data?.mockOtp) {
+        setMockOtpMsg(`[SMS MOCK] Mã OTP đã được gửi đến số ${phone}: ${data.data.mockOtp}`)
+      }
+      setShowOtpModal(true)
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại kết nối server.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setOtpError('')
+    if (otpCode.length !== 6) {
+      setOtpError('Mã OTP phải chứa 6 chữ số.')
+      return
+    }
+
+    setOtpLoading(true)
+    try {
+      const res = await authService.verifyOtp(email, otpCode)
+      // Save tokens
+      sessionStorage.setItem('accessToken', res.data.accessToken)
+      sessionStorage.setItem('refreshToken', res.data.refreshToken)
+      
+      // Complete login in context
+      await login(email, password)
+      nav('/dashboard')
+    } catch (err: any) {
+      setOtpError(err.response?.data?.message || err.message || 'Xác thực OTP thất bại.')
+    } finally {
+      setOtpLoading(false)
     }
   }
 
@@ -96,6 +133,23 @@ export default function Register() {
             💡 Dùng để đăng nhập, nhận thông báo và lời mời gia nhập nhóm.
           </p>
         </div>
+
+        <div>
+          <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider block mb-1.5 ml-1">
+            Số điện thoại <span className="text-[#FF6B00] text-[11px] font-normal normal-case ml-1">(Nhập 10-11 số)</span>
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="Ví dụ: 0912345678"
+            className="w-full border border-gray-200/80 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 bg-gray-50/50 dark:bg-[#1C1C28]"
+            required
+          />
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 ml-1 leading-relaxed">
+            💡 Bắt buộc để xác thực đăng ký tài khoản qua OTP SMS.
+          </p>
+        </div>
         
         <div>
           <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider block mb-1.5 ml-1">
@@ -129,6 +183,49 @@ export default function Register() {
         Đã có tài khoản?{' '}
         <Link to="/login" className="text-[#FF6B00] hover:underline font-bold">Đăng nhập ngay</Link>
       </div>
+
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+          <div className="bg-[#13131C] border border-gray-800 rounded-3xl p-6 w-full max-w-sm relative shadow-2xl animate-scaleUp">
+            <h3 className="text-xl font-bold text-white text-center mb-2">Xác thực số điện thoại 📱</h3>
+            <p className="text-gray-400 text-xs text-center mb-4 leading-relaxed">
+              Mã xác thực OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra và nhập vào ô dưới đây.
+            </p>
+
+            {mockOtpMsg && (
+              <div className="mb-4 p-3 bg-orange-950/20 border border-orange-500/30 rounded-xl text-[#FF6B00] text-center text-xs font-semibold select-all">
+                {mockOtpMsg}
+              </div>
+            )}
+
+            {otpError && (
+              <div className="mb-4 p-3 bg-red-950/25 border border-red-900/30 rounded-xl text-red-400 text-center text-xs">
+                {otpError}
+              </div>
+            )}
+
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <input
+                type="text"
+                value={otpCode}
+                onChange={e => setOtpCode(e.target.value)}
+                placeholder="Nhập 6 số OTP"
+                maxLength={6}
+                className="w-full text-center tracking-[0.5em] text-lg font-bold border border-gray-700 rounded-xl px-4 py-3 bg-[#1C1C28] text-white focus:outline-none focus:border-[#FF6B00] placeholder:tracking-normal placeholder:font-normal placeholder:text-sm"
+                required
+              />
+
+              <button
+                type="submit"
+                disabled={otpLoading}
+                className="w-full py-3 rounded-xl bg-[#FF6B00] hover:bg-orange-600 text-white font-bold text-sm shadow-[0_6px_20px_rgba(255,107,0,0.2)] transition-all duration-200 disabled:opacity-50"
+              >
+                {otpLoading ? 'Đang xác thực...' : 'Xác nhận OTP'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -67,6 +67,9 @@ model User {
   desiredRole  String?          // Desired role in team
   commitmentHours Int?          // Available hours per week
   pastProjects String?          // Past project experience
+  phone        String?          @unique
+  isVerified   Boolean          @default(true)
+  verificationCode String?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   lastActive   DateTime         @default(now())
@@ -92,6 +95,8 @@ model User {
   balance            Int              @default(100000)
   investments        Investment[]
   leaveRequests      LeaveRequest[]
+  feedbacksSubmitted Feedback[]       @relation("FeedbackUser")
+  feedbacksReplied   Feedback[]       @relation("FeedbackRepliedBy")
 
   @@map("users")
 }
@@ -472,5 +477,19 @@ model LeaveRequest {
 
   @@unique([teamId, userId])
   @@map("leave_requests")
+}
+
+model Feedback {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation("FeedbackUser", fields: [userId], references: [id], onDelete: Cascade)
+  content      String
+  reply        String?
+  repliedById  String?
+  repliedBy    User?    @relation("FeedbackRepliedBy", fields: [repliedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("feedbacks")
 }
 

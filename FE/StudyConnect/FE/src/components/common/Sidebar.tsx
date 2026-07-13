@@ -227,7 +227,8 @@ export default function Sidebar() {
             { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={14} /> },
             { to: '/admin/subscriptions', label: 'Gói dịch vụ', icon: <CreditCard size={14} /> },
             { to: '/admin/payments', label: 'Dòng tiền giao dịch', icon: <TrendingUp size={14} /> },
-            { to: '/admin/reports', label: 'Báo cáo hệ thống', icon: <FilePieChart size={14} /> }
+            { to: '/admin/reports', label: 'Báo cáo hệ thống', icon: <FilePieChart size={14} /> },
+            { to: '/admin/feedbacks', label: 'Ý kiến góp ý', icon: <Inbox size={14} /> }
           ]
         },
         {

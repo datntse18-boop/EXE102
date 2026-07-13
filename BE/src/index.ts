@@ -25,6 +25,8 @@ import financialRoutes from './routes/financial.routes'
 import mentorRoutes from './routes/mentor.routes'
 import investmentRoutes from './routes/investment.routes'
 import githubRoutes from './routes/github.routes'
+import feedbackRoutes from './routes/feedback.routes'
+
 
 dotenv.config()
 
@@ -118,6 +120,8 @@ app.use('/api/financial', financialRoutes)
 app.use('/api/mentor', mentorRoutes)
 app.use('/api/investments', investmentRoutes)
 app.use('/api/github', githubRoutes)
+app.use('/api/feedbacks', feedbackRoutes)
+
 
 // 404 handler
 app.use((req, res) => {

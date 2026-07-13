@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { userService } from '../../services/apiServices'
+import { userService, feedbackService } from '../../services/apiServices'
 import Card from '../../components/cards/Card'
-import { Mail, Sparkles, Clock, BookOpen, Code, Award, Loader2 } from 'lucide-react'
+import { Mail, Sparkles, Clock, BookOpen, Code, Award, Loader2, MessageSquare, Send, Check } from 'lucide-react'
 
 export default function Profile() {
   const { user, role, updateUserData } = useAuth()
@@ -15,6 +15,46 @@ export default function Profile() {
   const [classCode, setClassCode] = useState(user?.classCode || '')
   
   const [updating, setUpdating] = useState(false)
+
+  // Feedback states
+  const [feedbacks, setFeedbacks] = useState<any[]>([])
+  const [feedbackContent, setFeedbackContent] = useState('')
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false)
+
+  const loadFeedbacks = async () => {
+    setLoadingFeedbacks(true)
+    try {
+      const data = await feedbackService.getMyFeedbacks()
+      setFeedbacks(data)
+    } catch (err) {
+      console.error('Failed to load feedbacks:', err)
+    } finally {
+      setLoadingFeedbacks(false)
+    }
+  }
+
+  useEffect(() => {
+    loadFeedbacks()
+  }, [])
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!feedbackContent.trim()) return
+
+    setSubmittingFeedback(true)
+    try {
+      await feedbackService.submitFeedback(feedbackContent)
+      setFeedbackContent('')
+      alert('Gửi góp ý thành công! Cảm ơn ý kiến của bạn. 🙌')
+      loadFeedbacks()
+    } catch (err) {
+      console.error(err)
+      alert('Gửi góp ý thất bại. Vui lòng thử lại.')
+    } finally {
+      setSubmittingFeedback(false)
+    }
+  }
 
   // Dynamic Badges calculation
   const badgesList = [
@@ -316,6 +356,98 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      {/* Feedback Section */}
+      <Card className="mt-8 bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-800/80">
+        <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-850 pb-3 mb-6">
+          <MessageSquare className="w-5 h-5 text-[#FF6B00]" />
+          <h3 className="font-extrabold text-gray-900 dark:text-white text-sm">
+            Góp ý & Phản hồi cho Hệ thống StudyConnect
+          </h3>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Submit form */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Gửi góp ý mới
+            </h4>
+            <form onSubmit={handleFeedbackSubmit} className="space-y-3">
+              <textarea
+                value={feedbackContent}
+                onChange={e => setFeedbackContent(e.target.value)}
+                placeholder="Nhập ý kiến đóng góp, báo lỗi hoặc đề xuất tính năng của bạn tại đây..."
+                rows={4}
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#FF6B00] bg-gray-50/50 dark:bg-[#1C1C28] text-gray-900 dark:text-white"
+                required
+              />
+              <button
+                type="submit"
+                disabled={submittingFeedback}
+                className="px-5 py-2.5 bg-[#FF6B00] hover:bg-orange-600 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submittingFeedback ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    Gửi góp ý
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Feedback list */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Lịch sử góp ý & Phản hồi
+            </h4>
+            
+            {loadingFeedbacks ? (
+              <div className="flex items-center justify-center py-6 text-gray-500 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin text-[#FF6B00] mr-2" /> Đang tải lịch sử...
+              </div>
+            ) : feedbacks.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-xs border-2 border-dashed border-gray-100 dark:border-gray-800/40 rounded-2xl">
+                Bạn chưa gửi góp ý nào cho hệ thống.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                {feedbacks.map((f: any) => (
+                  <div key={f.id} className="p-3 bg-gray-50/75 dark:bg-[#1C1C28]/60 border border-gray-150/40 dark:border-gray-850/40 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 dark:text-gray-500">
+                      <span>Gửi lúc: {new Date(f.createdAt).toLocaleString('vi-VN')}</span>
+                      {f.reply ? (
+                        <span className="bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-bold">Đã phản hồi</span>
+                      ) : (
+                        <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold">Đang chờ</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-750 dark:text-gray-300 font-medium leading-relaxed">
+                      {f.content}
+                    </p>
+                    {f.reply && (
+                      <div className="p-2.5 bg-emerald-500/5 dark:bg-emerald-950/10 border-l-2 border-emerald-500 rounded-r-xl space-y-1 mt-2">
+                        <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-450">
+                          <Check className="w-3.5 h-3.5" />
+                          Phản hồi từ Admin:
+                        </div>
+                        <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed italic">
+                          {f.reply}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
       
     </div>
   )

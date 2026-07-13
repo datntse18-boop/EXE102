@@ -23,7 +23,7 @@ type AuthContextValue = {
   user: User | null
   role: Role
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   logout: () => Promise<void>
   updateUserData: (data: Partial<User>) => void
 }
@@ -52,8 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     restore()
   }, [])
 
-  const login = async (email: string, password: string) => {
-    const { user: userData, accessToken, refreshToken } = await authService.login(email, password)
+  const login = async (identifier: string, password: string) => {
+    const { user: userData, accessToken, refreshToken } = await authService.login(identifier, password)
     sessionStorage.setItem('accessToken', accessToken)
     sessionStorage.setItem('refreshToken', refreshToken)
     setUser(userData)

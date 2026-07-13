@@ -80,3 +80,100 @@ export const getAIUsageReport = async (req: AuthRequest, res: Response): Promise
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// GET /api/reports/revenue-stats
+export const getRevenueStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { startDate, endDate } = req.query
+
+    const whereClause: any = { status: 'completed' }
+    if (startDate || endDate) {
+      whereClause.createdAt = {}
+      if (startDate) whereClause.createdAt.gte = new Date(startDate as string)
+      if (endDate) {
+        const end = new Date(endDate as string)
+        end.setHours(23, 59, 59, 999)
+        whereClause.createdAt.lte = end
+      }
+    }
+
+    const payments = await prisma.payment.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'asc' }
+    })
+
+    const aiUsages = await prisma.aIUsage.findMany()
+
+    let totalRevenue = 0
+    const byDay: Record<string, number> = {}
+    const byMonth: Record<string, number> = {}
+    const byQuarter: Record<string, number> = {}
+    const byYear: Record<string, number> = {}
+
+    for (const p of payments) {
+      const amt = p.amount
+      totalRevenue += amt
+
+      const dateObj = new Date(p.createdAt)
+      const yyyy = dateObj.getFullYear()
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const dd = String(dateObj.getDate()).padStart(2, '0')
+      
+      const dayKey = `${yyyy}-${mm}-${dd}`
+      const monthKey = `${yyyy}-${mm}`
+      
+      const monthNum = dateObj.getMonth()
+      let quarterNum = 1
+      if (monthNum >= 3 && monthNum <= 5) quarterNum = 2
+      else if (monthNum >= 6 && monthNum <= 8) quarterNum = 3
+      else if (monthNum >= 9) quarterNum = 4
+      const quarterKey = `${yyyy}-Q${quarterNum}`
+      
+      const yearKey = `${yyyy}`
+
+      byDay[dayKey] = (byDay[dayKey] || 0) + amt
+      byMonth[monthKey] = (byMonth[monthKey] || 0) + amt
+      byQuarter[quarterKey] = (byQuarter[quarterKey] || 0) + amt
+      byYear[yearKey] = (byYear[yearKey] || 0) + amt
+    }
+
+    const servicesBySales: Record<string, { plan: string; count: number; revenue: number }> = {
+      free: { plan: 'Free', count: 0, revenue: 0 },
+      premium: { plan: 'Pro Premium', count: 0, revenue: 0 },
+      enterprise: { plan: 'Enterprise', count: 0, revenue: 0 }
+    }
+
+    for (const p of payments) {
+      if (servicesBySales[p.plan]) {
+        servicesBySales[p.plan].count++
+        servicesBySales[p.plan].revenue += p.amount
+      }
+    }
+
+    const aiBreakdown = aiUsages.reduce((acc: Record<string, number>, curr) => {
+      const f = curr.feature
+      acc[f] = (acc[f] || 0) + curr.count
+      return acc
+    }, { idea_generator: 0, team_matching: 0, analytics: 0 })
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue,
+        totalPayments: payments.length,
+        breakdowns: {
+          byDay,
+          byMonth,
+          byQuarter,
+          byYear
+        },
+        services: Object.values(servicesBySales).sort((a, b) => b.revenue - a.revenue),
+        aiUsage: Object.entries(aiBreakdown).map(([feature, count]) => ({ feature, count })).sort((a, b) => b.count - a.count)
+      }
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
