@@ -353,7 +353,7 @@ export default function Pricing() {
       try {
         if (selectedPlan.id === 'team_premium') {
           const teamsRes = await teamService.getTeams()
-          const upgradedTeam = teamsRes.data?.find((t: any) => t.id === selectedTeamId)
+          const upgradedTeam = teamsRes?.find((t: any) => t.id === selectedTeamId)
           if (upgradedTeam && upgradedTeam.subscription === 'premium') {
             clearInterval(interval)
             setStep('success')
@@ -406,7 +406,7 @@ export default function Pricing() {
     if (plan.id === 'team_premium') {
       try {
         const teamsRes = await teamService.getTeams()
-        const ledTeams = teamsRes.data?.filter((t: any) => t.leaderId === user?.id) || []
+        const ledTeams = teamsRes?.filter((t: any) => t.leaderId === user?.id) || []
         setMyTeams(ledTeams)
         if (ledTeams.length > 0) {
           setSelectedTeamId(ledTeams[0].id)
