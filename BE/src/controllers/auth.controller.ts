@@ -53,7 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         isVerified: false,
         verificationCode: otp
       },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, status: true, classCode: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, classCode: true },
     })
 
     console.log(`\n======================================================`)
@@ -106,7 +106,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { isVerified: true, verificationCode: null },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, status: true, classCode: true }
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, classCode: true }
     })
 
     const { accessToken, refreshToken } = generateTokens(updatedUser.id, updatedUser.role, updatedUser.email)
@@ -189,7 +189,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         user: {
           id: user.id, name: user.name, email: user.email, phone: user.phone,
           role: user.role, avatar: user.avatar,
-          subscription: user.subscription, status: user.status,
+          subscription: user.subscription,
+          subscriptionExpiresAt: user.subscriptionExpiresAt,
+          status: user.status,
           classCode: user.classCode,
         },
         accessToken,
@@ -248,7 +250,7 @@ export const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, status: true, lastActive: true, createdAt: true, classCode: true, balance: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, subscription: true, subscriptionExpiresAt: true, status: true, lastActive: true, createdAt: true, classCode: true, balance: true },
     })
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' })

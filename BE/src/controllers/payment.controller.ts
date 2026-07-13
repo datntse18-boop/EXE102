@@ -30,7 +30,7 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
 // POST /api/payments — Create PENDING payment (user declares they will pay)
 export const createPayment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { plan, txId, discountCode, evidence, bankId, teamId } = req.body
+    const { plan, txId, discountCode, evidence, bankId, teamId, durationMonths } = req.body
     const validPlans = ['premium', 'enterprise']
     if (!plan || !validPlans.includes(plan)) {
       res.status(400).json({ success: false, message: 'Valid plan required: premium or enterprise' })
@@ -54,7 +54,16 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
       }
     }
 
-    let amount = PLAN_PRICES[amountKey]
+    const duration = Number(durationMonths) || 1
+    let amount = PLAN_PRICES[amountKey] * duration
+    
+    // Apply bulk month discounts
+    if (duration === 3) {
+      amount = Math.round(amount * 0.8) // 20% discount
+    } else if (duration === 12) {
+      amount = Math.round(amount * 0.7) // 30% discount
+    }
+
     if (discountCode === 'STUDYCONNECT30') {
       amount = Math.round(amount * 0.7)
     }
@@ -70,6 +79,7 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
         evidence,
         bankId,
         teamId: teamId || null,
+        durationMonths: duration,
       },
     })
 
@@ -106,11 +116,18 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
       include: { user: { select: { id: true, name: true, email: true } } },
     })
 
+    const duration = payment.durationMonths || 1
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + duration)
+
     // Upgrade subscription (Team or User)
     if (payment.teamId) {
       await prisma.team.update({
         where: { id: payment.teamId },
-        data: { subscription: payment.plan }
+        data: { 
+          subscription: payment.plan,
+          subscriptionExpiresAt: expiresAt,
+        }
       })
 
       // Create notification for team leader
@@ -118,14 +135,17 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         data: {
           userId: payment.userId,
           title: '🎉 Thanh toán gói Nhóm thành công!',
-          content: `Gói Premium của nhóm đã được kích hoạt. Chúc mừng nhóm bạn!`,
+          content: `Gói Premium của nhóm đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         },
       })
     } else {
       await prisma.user.update({
         where: { id: payment.userId },
-        data: { subscription: payment.plan },
+        data: { 
+          subscription: payment.plan,
+          subscriptionExpiresAt: expiresAt,
+        },
       })
 
       // Create notification for user
@@ -133,7 +153,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         data: {
           userId: payment.userId,
           title: '🎉 Thanh toán xác nhận thành công!',
-          content: `Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn đã được kích hoạt. Chúc mừng bạn!`,
+          content: `Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         },
       })
@@ -242,11 +262,18 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
       data: { status: 'completed' }
     })
 
+    const duration = payment.durationMonths || 1
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + duration)
+
     // Upgrade subscription (Team or User)
     if (payment.teamId) {
       await prisma.team.update({
         where: { id: payment.teamId },
-        data: { subscription: payment.plan }
+        data: { 
+          subscription: payment.plan,
+          subscriptionExpiresAt: expiresAt,
+        }
       })
 
       // Create system notification
@@ -254,14 +281,17 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói Nhóm thành công!',
-          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói Premium cho nhóm của bạn tự động.`,
+          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói Premium cho nhóm của bạn tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })
     } else {
       await prisma.user.update({
         where: { id: payment.userId },
-        data: { subscription: payment.plan }
+        data: { 
+          subscription: payment.plan,
+          subscriptionExpiresAt: expiresAt,
+        }
       })
 
       // Create system notification
@@ -269,7 +299,7 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói thành công!',
-          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn một cách tự động.`,
+          content: `Cảm ơn bạn đã thanh toán. Hệ thống đã nhận được tiền và kích hoạt gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn một cách tự động. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })

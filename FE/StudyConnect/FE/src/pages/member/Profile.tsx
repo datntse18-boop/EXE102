@@ -143,9 +143,21 @@ export default function Profile() {
             <p className="text-sm opacity-90 flex items-center gap-1 justify-center sm:justify-start">
               <Mail className="w-4 h-4" /> {user?.email}
             </p>
-            <span className="inline-block bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              {role === 'member' ? 'Sinh viên' : role === 'manager' ? 'Giảng viên' : role === 'leader' ? 'Quản lý (Dean)' : 'Admin'}
-            </span>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5 justify-center sm:justify-start">
+              <span className="inline-block bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+                {role === 'member' ? 'Sinh viên' : role === 'manager' ? 'Giảng viên' : role === 'leader' ? 'Quản lý (Dean)' : 'Admin'}
+              </span>
+              {user?.subscription && user.subscription !== 'free' && (
+                <span className="inline-flex items-center gap-1 bg-yellow-400 text-gray-950 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">
+                  👑 {user.subscription === 'premium' ? 'Premium Pro' : 'Enterprise'}
+                </span>
+              )}
+              {user?.subscriptionExpiresAt && user.subscription !== 'free' && (
+                <span className="inline-flex items-center gap-1 bg-black/30 text-orange-200 text-[10px] font-bold px-3 py-1.5 rounded-full">
+                  📅 Hạn dùng: {new Date(user.subscriptionExpiresAt).toLocaleDateString('vi-VN')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -112,13 +112,23 @@ export default function TopNav() {
         ) : (
           <div className="flex items-center gap-3">
             <div className="text-right hidden md:block">
-              <div className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1">
+              <div className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1 justify-end">
                 {user.name}
-                {user.subscription === 'premium' && <Sparkles className="w-3 h-3 text-[#FF6B00]" />}
-                {user.subscription === 'enterprise' && <Shield className="w-3 h-3 text-[#FF6B00]" />}
+                {user.subscription === 'premium' && <Sparkles className="w-3.5 h-3.5 text-[#FF6B00]" />}
+                {user.subscription === 'enterprise' && <Shield className="w-3.5 h-3.5 text-[#FF6B00]" />}
               </div>
-              <div className="text-[10px] font-bold text-gray-400 capitalize bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full inline-block mt-0.5">
-                {user.role}
+              <div className="flex items-center gap-1.5 justify-end mt-1">
+                <span className="text-[9px] font-bold text-gray-400 capitalize bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                  {user.role}
+                </span>
+                {user.subscriptionExpiresAt && user.subscription !== 'free' && (
+                  <span 
+                    className="text-[8px] font-black text-orange-400/90 bg-orange-500/5 px-1.5 py-0.5 rounded-full border border-orange-500/10"
+                    title={`Hạn dùng gói Premium: ${new Date(user.subscriptionExpiresAt).toLocaleDateString('vi-VN')}`}
+                  >
+                    📅 HSD: {new Date(user.subscriptionExpiresAt).toLocaleDateString('vi-VN')}
+                  </span>
+                )}
               </div>
             </div>
 

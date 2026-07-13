@@ -10,6 +10,7 @@ type User = {
   role: Role
   avatar?: string
   subscription?: string
+  subscriptionExpiresAt?: string
   status?: string
   skills?: string
   desiredRole?: string

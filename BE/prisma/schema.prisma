@@ -62,6 +62,7 @@ model User {
   avatar       String?
   status       String           @default("active") // active | suspended
   subscription SubscriptionPlan @default(free)
+  subscriptionExpiresAt DateTime?
   classCode    String?          // Unique class code for lecturers or joined class code for students
   skills       String?          // Professional skills (comma separated)
   desiredRole  String?          // Desired role in team
@@ -135,6 +136,7 @@ model Team {
   chatMessages    ChatMessage[]
   payments        Payment[]
   subscription    SubscriptionPlan @default(free)
+  subscriptionExpiresAt DateTime?
   leaveRequests   LeaveRequest[]
 
   @@map("teams")
@@ -227,6 +229,7 @@ model Payment {
   bankId    String?
   teamId    String?
   team      Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  durationMonths Int    @default(1)
   createdAt DateTime      @default(now())
 
   @@map("payments")

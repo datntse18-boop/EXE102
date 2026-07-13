@@ -252,9 +252,10 @@ export const paymentService = {
     amount?: number,
     evidence?: string,
     bankId?: string,
-    teamId?: string
+    teamId?: string,
+    durationMonths?: number
   ) => {
-    const { data } = await api.post('/payments', { plan, txId, discountCode, amount, evidence, bankId, teamId })
+    const { data } = await api.post('/payments', { plan, txId, discountCode, amount, evidence, bankId, teamId, durationMonths })
     return data.data
   },
 

@@ -327,10 +327,46 @@ export default function Pricing() {
   const promoRef = useRef<HTMLInputElement>(null)
   const [showComparisonModal, setShowComparisonModal] = useState(false)
 
+  const [billingPeriod, setBillingPeriod] = useState<1 | 3 | 12>(1)
+
+  const getPlanPricing = (planId: string) => {
+    let base = 0
+    if (planId === 'premium') base = 699000
+    else if (planId === 'team_premium') base = 3149000
+    else if (planId === 'enterprise') base = 899000
+    else return { price: 0, label: '0 VNĐ', originalLabel: '', period: '/ mãi mãi' }
+
+    if (billingPeriod === 1) {
+      return {
+        price: base,
+        label: base.toLocaleString('vi-VN') + ' VNĐ',
+        originalLabel: '',
+        period: planId === 'team_premium' ? '/ tháng / nhóm' : '/ tháng'
+      }
+    } else if (billingPeriod === 3) {
+      const discounted = Math.round(base * 3 * 0.8) // 20% discount
+      return {
+        price: discounted,
+        label: discounted.toLocaleString('vi-VN') + ' VNĐ',
+        originalLabel: (base * 3).toLocaleString('vi-VN') + ' VNĐ',
+        period: planId === 'team_premium' ? '/ 3 tháng / nhóm' : '/ 3 tháng'
+      }
+    } else {
+      const discounted = Math.round(base * 12 * 0.7) // 30% discount
+      return {
+        price: discounted,
+        label: discounted.toLocaleString('vi-VN') + ' VNĐ',
+        originalLabel: (base * 12).toLocaleString('vi-VN') + ' VNĐ',
+        period: planId === 'team_premium' ? '/ năm / nhóm' : '/ năm'
+      }
+    }
+  }
+
+  const currentPlanPricing = selectedPlan ? getPlanPricing(selectedPlan.id) : { price: 0 }
   const finalPrice = selectedPlan
     ? discountApplied
-      ? Math.round(selectedPlan.price * 0.7)
-      : selectedPlan.price
+      ? Math.round(currentPlanPricing.price * 0.7)
+      : currentPlanPricing.price
     : 0
 
   // VietQR URL (real QR code, dynamically generated according to selectedBank)
@@ -444,7 +480,8 @@ export default function Pricing() {
         finalPrice,
         undefined, // no evidence file needed
         selectedBank.id,
-        teamIdToSubmit
+        teamIdToSubmit,
+        billingPeriod
       )
       setPaymentId(res.id || '')
       setStep('pending')
@@ -512,20 +549,61 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
         </div>
       </div>
 
-      {/* Comparison Toggle Button */}
-      <div className="text-center pt-2">
-        <button
-          onClick={() => setShowComparisonModal(true)}
-          className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-orange-500/10 to-[#FF6B00]/10 hover:from-orange-500/20 hover:to-[#FF6B00]/20 border border-orange-500/30 hover:border-orange-500/50 text-[#FF6B00] dark:text-orange-400 text-xs font-black rounded-full transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0"
-        >
-          <Sliders className="w-4 h-4 text-orange-500" />
-          So sánh chi tiết quyền lợi & tính năng các gói
-        </button>
+      </div>
+
+      {/* Billing Duration Selector with Savings Banner */}
+      <div className="max-w-md mx-auto space-y-4">
+        <div className="bg-gray-100 dark:bg-gray-950 p-1.5 rounded-2xl flex border dark:border-gray-850 justify-between items-center gap-1.5 shadow-sm">
+          <button
+            onClick={() => setBillingPeriod(1)}
+            className={`flex-1 py-2.5 text-xs font-black rounded-xl transition cursor-pointer ${
+              billingPeriod === 1
+                ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md'
+                : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            1 Tháng
+          </button>
+          <button
+            onClick={() => setBillingPeriod(3)}
+            className={`flex-1 py-2.5 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              billingPeriod === 3
+                ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md'
+                : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            3 Tháng
+            <span className="bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+              -20%
+            </span>
+          </button>
+          <button
+            onClick={() => setBillingPeriod(12)}
+            className={`flex-1 py-2.5 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              billingPeriod === 12
+                ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md'
+                : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            1 Năm
+            <span className="bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+              -30%
+            </span>
+          </button>
+        </div>
+
+        {billingPeriod !== 1 && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400 text-center rounded-2xl text-[10px] font-black uppercase tracking-wider animate-pulse flex items-center justify-center gap-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            Đăng ký gói {billingPeriod} tháng giúp bạn tiết kiệm đến {billingPeriod === 3 ? '20%' : '30%'} chi phí!
+          </div>
+        )}
       </div>
 
       {/* Pricing Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
         {PLANS.map(plan => {
+          const pricing = getPlanPricing(plan.id)
           const isCurrentPlan = plan.id === 'team_premium' ? false : (plan.id === currentPlan || (plan.id === 'free' && currentPlan === 'free'))
           const isUpgraded = plan.id === 'team_premium' ? false : (plan.id !== 'free' && currentPlan !== 'free' &&
             (currentPlan === plan.id || (currentPlan === 'enterprise' && plan.id === 'premium')))
@@ -556,16 +634,16 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                 <h3 className="text-base font-black text-gray-800 dark:text-white">{plan.name}</h3>
                 <p className="text-[11px] text-gray-400 mt-1">{plan.desc}</p>
                 <div className="my-5 flex flex-col gap-0.5">
-                  {plan.originalPriceLabel && (
+                  {pricing.originalLabel && (
                     <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold line-through ml-0.5">
-                      {plan.originalPriceLabel}
+                      {pricing.originalLabel}
                     </span>
                   )}
                   <div>
                     <span className={`text-3xl font-black ${plan.popular ? 'text-[#FF6B00]' : 'text-gray-800 dark:text-white'}`}>
-                      {plan.priceLabel}
+                      {pricing.label}
                     </span>
-                    <span className="text-xs text-gray-400 font-bold ml-1">{plan.period}</span>
+                    <span className="text-xs text-gray-400 font-bold ml-1">{pricing.period}</span>
                   </div>
                 </div>
                 <ul className="space-y-3 border-t dark:border-gray-800 pt-4">
