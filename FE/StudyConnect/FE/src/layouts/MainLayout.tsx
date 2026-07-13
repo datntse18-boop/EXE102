@@ -1,6 +1,8 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../components/common/Sidebar'
 import TopNav from '../components/common/TopNav'
+import CommandPalette from '../components/common/CommandPalette'
+import FloatingAiCopilot from '../components/common/FloatingAiCopilot'
 import { useState, useEffect } from 'react'
 import { Sparkles, Crown, Zap, X, AlertCircle, ArrowLeft } from 'lucide-react'
 
@@ -97,6 +99,10 @@ export default function MainLayout() {
           </div>
         </div>
       )}
+
+      {/* Global Utilities */}
+      <CommandPalette />
+      <FloatingAiCopilot />
     </div>
   )
 }

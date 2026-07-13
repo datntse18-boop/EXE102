@@ -73,6 +73,16 @@ export default function TopNav() {
         </Link>
       </div>
 
+      {user && (
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+          className="hidden md:flex items-center gap-2.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-white hover:bg-gray-800/40 transition cursor-pointer"
+        >
+          <span>🔍 Tìm tính năng...</span>
+          <kbd className="bg-gray-150 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[8px] border dark:border-gray-700">Ctrl + K</kbd>
+        </button>
+      )}
+
       <div className="flex items-center gap-4">
         {!user ? (
           <div className="flex items-center gap-3">
