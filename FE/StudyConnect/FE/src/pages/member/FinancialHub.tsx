@@ -356,7 +356,7 @@ export default function FinancialHub() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                       <XAxis dataKey="sales" label={{ value: 'Sản lượng (Cái)', position: 'insideBottomRight', offset: -5 }} />
                       <YAxis label={{ value: 'Số tiền (VNĐ)', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip formatter={(val: number) => val.toLocaleString('vi-VN') + ' đ'} />
+                      <Tooltip formatter={(value) => `${Number(value ?? 0).toLocaleString('vi-VN')} đ`}/>
                       <Legend />
                       <Line type="monotone" dataKey="Doanh thu" stroke="#FF6B00" strokeWidth={2.5} activeDot={{ r: 6 }} />
                       <Line type="monotone" dataKey="Tổng chi phí" stroke="#3b82f6" strokeWidth={2.5} />

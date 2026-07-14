@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Compass, Shield, CreditCard, Award, MessageSquare, ClipboardList, TrendingUp, CalendarDays, Key } from 'lucide-react'
+import { DollarSign } from "lucide-react"
 
 interface CommandItem {
   id: string

@@ -38,8 +38,14 @@ export default function ValuationCalculator() {
     network: 15
   }
 
-  const handleUpdateFounderValue = (idx: number, field: keyof Founder, val: number) => {
-    setFounders(prev => prev.map((f, i) => i === idx ? { ...f, [field]: val } : f))
+  const handleUpdateFounderValue = <K extends keyof Founder>(idx: number,field: K,val: Founder[K]) => {
+    setFounders(prev =>
+      prev.map((f, i) =>
+        i === idx
+          ? { ...f, [field]: val }
+          : f
+      )
+    )
   }
 
   const handleAddFounder = () => {
