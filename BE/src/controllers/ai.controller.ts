@@ -1,10 +1,30 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { getGeminiModel } from '../utils/gemini'
+import { generateViaN8nOrGemini, N8nFeature, emitN8nEvent } from '../services/n8n.service'
 
 const logAIUsage = async (userId: string, feature: 'idea_generator' | 'team_matching' | 'analytics', prompt: string, response: string) => {
   await prisma.aIUsage.create({ data: { userId, feature, prompt, response } })
+}
+
+async function runAi(
+  req: AuthRequest,
+  feature: N8nFeature,
+  prompt: string,
+  opts?: { expectJson?: boolean; systemPrompt?: string }
+): Promise<string> {
+  const { text, source } = await generateViaN8nOrGemini(
+    {
+      feature,
+      prompt,
+      systemPrompt: opts?.systemPrompt,
+      expectJson: opts?.expectJson,
+      user: { id: req.user!.id, role: req.user!.role, name: req.user!.name },
+    },
+    req
+  )
+  void emitN8nEvent(`ai_${feature}`, { userId: req.user!.id, source })
+  return text
 }
 
 // POST /api/ai/idea-generator
@@ -16,33 +36,51 @@ export const generateIdea = async (req: AuthRequest, res: Response): Promise<voi
       return
     }
 
-    const prompt = `Bạn là trợ lý AI của StudyConnect - nền tảng kết nối sinh viên.
-Hãy tạo ra một ý tưởng dự án sáng tạo dựa trên các thông tin sau:
+    const systemPrompt = `Bạn là chuyên gia ươm tạo startup tại StudyConnect (EXE101/EXE201).
+Tạo Ý TƯỞNG DỰ ÁN KHỞI NGHIỆP thực tế, khả thi cho sinh viên Việt Nam trong 4–8 tuần MVP.
+Phải cụ thể (tên sản phẩm, persona, pain point đo được, giải pháp, mô hình doanh thu, cạnh tranh).`
+
+    const prompt = `Thông tin đầu vào:
 - Đối tượng người dùng: ${targetUsers}
 - Vấn đề cần giải quyết: ${problemArea}
-- Công nghệ muốn sử dụng: ${technology || 'Bất kỳ'}
+- Công nghệ muốn sử dụng: ${technology || 'Bất kỳ (ưu tiên stack phổ biến sinh viên)'}
 
-Trả lời theo định dạng JSON (chỉ JSON, không giải thích thêm):
+Trả lời CHỈ JSON (không markdown):
 {
-  "name": "Tên dự án",
-  "problem": "Mô tả vấn đề chi tiết",
-  "solution": "Giải pháp đề xuất",
-  "market": "Thị trường mục tiêu",
+  "name": "Tên dự án hấp dẫn",
+  "tagline": "Câu slogan 1 dòng",
+  "problem": "Mô tả vấn đề chi tiết + bằng chứng/giả định",
+  "solution": "Giải pháp + cách hoạt động MVP",
+  "market": "Thị trường mục tiêu (TAM/SAM sơ bộ bằng lời)",
+  "customerPersona": "Persona chính",
+  "valueProposition": "Giá trị khác biệt",
+  "revenueModel": "Cách kiếm tiền",
   "techStack": ["Tech 1", "Tech 2", "Tech 3"],
-  "features": ["Tính năng 1", "Tính năng 2", "Tính năng 3"],
+  "features": ["Tính năng MVP 1", "Tính năng 2", "Tính năng 3", "Tính năng 4"],
+  "validationPlan": ["Bước xác thực 1", "Bước 2", "Bước 3"],
+  "risks": ["Rủi ro 1", "Rủi ro 2"],
   "potential": "High/Medium/Low",
-  "timeline": "Ước tính thời gian phát triển"
+  "timeline": "Lộ trình MVP theo tuần"
 }`
 
     let idea = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const { text, source } = await generateViaN8nOrGemini(
+        {
+          feature: 'idea_generator',
+          systemPrompt,
+          prompt,
+          expectJson: true,
+          user: { id: req.user!.id, role: req.user!.role, name: req.user!.name },
+        },
+        req
+      )
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         idea = JSON.parse(jsonMatch[0])
+        idea.aiSource = source
         await logAIUsage(req.user!.id, 'idea_generator', prompt, text)
+        void emitN8nEvent('idea_generated', { userId: req.user!.id, source, name: idea.name })
       }
     } catch (err) {
       console.error('AI Error:', err)
@@ -51,18 +89,29 @@ Trả lời theo định dạng JSON (chỉ JSON, không giải thích thêm):
     if (!idea) {
       idea = {
         name: `${technology || 'Smart'} ${problemArea.substring(0, 15)} Hub`,
-        problem: `Lớp học hoặc nhóm đối tượng "${targetUsers}" đang gặp khó khăn nghiêm trọng về "${problemArea}".`,
-        solution: `Ứng dụng thông minh tích hợp công nghệ giúp "${targetUsers}" giải quyết vấn đề "${problemArea}" một cách hiệu quả và tự động.`,
-        market: `Thị trường Việt Nam với quy mô hàng trăm ngàn người dùng tiềm năng thuộc đối tượng "${targetUsers}".`,
-        techStack: [technology || 'React/NodeJS', "TailwindCSS", "PostgreSQL", "Google Gemini API"],
+        tagline: `Giải pháp cho ${targetUsers}`,
+        problem: `Đối tượng "${targetUsers}" đang gặp khó khăn về "${problemArea}".`,
+        solution: `Ứng dụng giúp "${targetUsers}" giải quyết "${problemArea}" bằng quy trình số hóa và AI hỗ trợ.`,
+        market: `Thị trường Việt Nam — phân khúc ${targetUsers}.`,
+        customerPersona: targetUsers,
+        valueProposition: 'Nhanh triển khai, chi phí thấp, đo được kết quả.',
+        revenueModel: 'Freemium + gói Pro theo tháng',
+        techStack: [technology || 'React/NodeJS', 'TailwindCSS', 'PostgreSQL', 'Google Gemini', 'n8n'],
         features: [
-          `Đăng ký tài khoản và thiết lập hồ sơ người dùng cá nhân hóa.`,
-          `Hệ thống gợi ý giải pháp tự động dựa trên học máy.`,
-          `Báo cáo thống kê và phân tích tiến độ thực tế.`
+          'Đăng ký & hồ sơ cá nhân hóa',
+          'Gợi ý giải pháp bằng AI',
+          'Bảng điều khiển tiến độ',
+          'Báo cáo xuất PDF nhanh',
         ],
-        potential: "High",
-        timeline: "4-6 tuần phát triển MVP",
-        isFallback: true
+        validationPlan: [
+          'Phỏng vấn 10 người dùng mục tiêu',
+          'Landing page + waitlist',
+          'Prototype clickable và đo conversion',
+        ],
+        risks: ['Khó đạt product-market fit', 'Chi phí thu hút người dùng cao'],
+        potential: 'High',
+        timeline: '4-6 tuần phát triển MVP',
+        isFallback: true,
       }
     }
 
@@ -114,9 +163,7 @@ Hãy gợi ý 3 nhóm phù hợp nhất và lý do, theo format JSON:
 
     let matching = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const text = await runAi(req, 'analytics', prompt)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         matching = JSON.parse(jsonMatch[0])
@@ -205,9 +252,7 @@ Trả lời JSON:
 
     let analysis = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const text = await runAi(req, 'analytics', prompt)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0])
@@ -291,9 +336,7 @@ Hãy đánh giá dự án và trả về chính xác định dạng JSON (chỉ 
 
     let analysis = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const text = await runAi(req, 'analytics', prompt)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0])
@@ -368,9 +411,7 @@ Hãy trả về chính xác định dạng JSON (chỉ JSON, không có mã mark
 
       let data = null
       try {
-        const model = getGeminiModel(req)
-        const result = await model.generateContent(prompt)
-        const text = result.response.text()
+        const text = await runAi(req, 'analytics', prompt)
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
           data = JSON.parse(jsonMatch[0])
@@ -424,9 +465,7 @@ Hãy trả về chính xác định dạng JSON (chỉ JSON, không có mã mark
 
       let data = null
       try {
-        const model = getGeminiModel(req)
-        const result = await model.generateContent(prompt)
-        const text = result.response.text()
+        const text = await runAi(req, 'analytics', prompt)
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
           data = JSON.parse(jsonMatch[0])
@@ -480,9 +519,7 @@ Lưu ý:
 
       let data = null
       try {
-        const model = getGeminiModel(req)
-        const result = await model.generateContent(prompt)
-        const text = result.response.text()
+        const text = await runAi(req, 'analytics', prompt)
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
           data = JSON.parse(jsonMatch[0])
@@ -572,9 +609,7 @@ Lưu ý:
 
     let slidesData = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const text = await runAi(req, 'analytics', prompt)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         slidesData = JSON.parse(jsonMatch[0])
@@ -884,9 +919,7 @@ Hãy thực hiện chẩn đoán toàn diện (Global Project Audit) dự án b�
 
     let responseText = 'AI chưa thể chẩn đoán toàn diện dự án lúc này.'
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      responseText = result.response.text().trim()
+      responseText = await runAi(req, 'global_audit', prompt)
       
       // Log usage
       await prisma.aIUsage.create({
@@ -962,9 +995,7 @@ Chú ý: "leaderId" phải nằm trong danh sách "memberIds" của chính nhóm
 
     let suggestedTeams = []
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      let text = result.response.text().trim()
+      let text = await runAi(req, 'auto_grouping', prompt, { expectJson: true })
       
       // Strip markdown code block wrappers if any
       if (text.startsWith('```json')) {
@@ -1115,9 +1146,7 @@ Lưu ý: Thay đổi các nhận xét và điểm số dựa trên chủ đề c
 
     let analysis = null
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const text = await runAi(req, 'analytics', prompt)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0])

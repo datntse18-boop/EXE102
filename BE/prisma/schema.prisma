@@ -99,6 +99,7 @@ model User {
   leaveRequests      LeaveRequest[]
   feedbacksSubmitted Feedback[]       @relation("FeedbackUser")
   feedbacksReplied   Feedback[]       @relation("FeedbackRepliedBy")
+  aiConversations    AIConversation[]
 
   @@map("users")
 }
@@ -455,6 +456,36 @@ model AIMentorMessage {
   createdAt DateTime @default(now())
 
   @@map("ai_mentor_messages")
+}
+
+/// Unified AI Support Hub conversations (student / teacher / floating copilot)
+model AIConversation {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String          @default("Cuộc trò chuyện mới")
+  mode      String          @default("student") // student | teacher | copilot
+  projectId String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  messages  AIChatMessage[]
+
+  @@index([userId, mode])
+  @@map("ai_conversations")
+}
+
+model AIChatMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // "user" | "model"
+  content        String
+  /// JSON: [{ name, mimeType, size, textExcerpt? }]
+  attachments    String?
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("ai_chat_messages")
 }
 
 model Investment {

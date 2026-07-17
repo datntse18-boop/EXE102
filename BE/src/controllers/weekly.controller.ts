@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { getGeminiModel } from '../utils/gemini'
+import { generateViaN8nOrGemini, emitN8nEvent } from '../services/n8n.service'
 import { createNotification } from './notification.controller'
 
 // POST /api/weekly/submit
@@ -13,7 +13,6 @@ export const submitReport = async (req: AuthRequest, res: Response): Promise<voi
       return
     }
 
-    // Call Gemini AI to analyze report and generate summary advice
     const prompt = `Bạn là trợ lý cố vấn AI cho môn học khởi nghiệp (EXE101/EXE201).
 Hãy đánh giá báo cáo tuần này của một nhóm dự án khởi nghiệp sinh viên:
 - Thành quả tuần này: ${achievements}
@@ -24,19 +23,21 @@ Hãy tóm tắt và cho lời khuyên ngắn gọn (khoảng 3-4 câu) bằng ti
 
     let aiSummary = 'AI chưa phân tích được báo cáo này.'
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      aiSummary = result.response.text().trim()
+      const { text } = await generateViaN8nOrGemini(
+        { feature: 'weekly_summary', prompt, user: { id: req.user!.id, role: req.user!.role } },
+        req
+      )
+      aiSummary = text
 
-      // Log AI usage
       await prisma.aIUsage.create({
         data: {
           userId: req.user!.id,
           feature: 'analytics',
           prompt,
-          response: aiSummary
-        }
+          response: aiSummary,
+        },
       })
+      void emitN8nEvent('weekly_report_submitted', { teamId, weekNumber, userId: req.user!.id })
     } catch (aiErr) {
       console.error('Gemini AI error on weekly report:', aiErr)
     }

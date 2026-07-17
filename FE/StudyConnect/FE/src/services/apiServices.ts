@@ -345,6 +345,47 @@ export const aiService = {
   },
 }
 
+export interface AiSupportAttachment {
+  name: string
+  mimeType: string
+  data?: string
+  textExcerpt?: string
+}
+
+export const aiSupportService = {
+  listConversations: async (mode?: string) => {
+    const { data } = await api.get('/ai-support/conversations', { params: mode ? { mode } : undefined })
+    return data.data
+  },
+
+  createConversation: async (payload: { mode?: string; title?: string; projectId?: string }) => {
+    const { data } = await api.post('/ai-support/conversations', payload)
+    return data.data
+  },
+
+  getConversation: async (id: string) => {
+    const { data } = await api.get(`/ai-support/conversations/${id}`)
+    return data.data
+  },
+
+  deleteConversation: async (id: string) => {
+    const { data } = await api.delete(`/ai-support/conversations/${id}`)
+    return data
+  },
+
+  chat: async (payload: {
+    conversationId?: string
+    mode?: 'student' | 'teacher' | 'copilot'
+    message: string
+    projectId?: string
+    attachments?: AiSupportAttachment[]
+    pageContext?: string
+  }) => {
+    const { data } = await api.post('/ai-support/chat', payload)
+    return data.data
+  },
+}
+
 export const reportService = {
   getPlatformStats: async () => {
     const { data } = await api.get('/reports/platform-stats')

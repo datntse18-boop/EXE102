@@ -90,9 +90,17 @@ export default function IdeaGenerator() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-xl font-bold text-gray-800">{idea.name}</h3>
+              {idea.tagline && (
+                <p className="text-sm text-gray-500 italic mt-1">{idea.tagline}</p>
+              )}
               <span className={`text-xs px-2 py-1 rounded font-medium mt-1 inline-block ${idea.potential === 'High' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                 🎯 Tiềm năng: {idea.potential}
               </span>
+              {idea.aiSource && (
+                <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-medium">
+                  via {idea.aiSource === 'n8n' ? 'n8n' : 'Gemini'}
+                </span>
+              )}
             </div>
             <span className="text-3xl">💡</span>
           </div>
@@ -114,6 +122,24 @@ export default function IdeaGenerator() {
               <p className="text-sm font-semibold text-gray-600 mb-1">⏱️ Timeline</p>
               <p className="text-gray-700">{idea.timeline}</p>
             </div>
+            {idea.customerPersona && (
+              <div>
+                <p className="text-sm font-semibold text-gray-600 mb-1">👤 Persona</p>
+                <p className="text-gray-700">{idea.customerPersona}</p>
+              </div>
+            )}
+            {idea.valueProposition && (
+              <div>
+                <p className="text-sm font-semibold text-gray-600 mb-1">✨ Value Proposition</p>
+                <p className="text-gray-700">{idea.valueProposition}</p>
+              </div>
+            )}
+            {idea.revenueModel && (
+              <div>
+                <p className="text-sm font-semibold text-gray-600 mb-1">💰 Mô hình doanh thu</p>
+                <p className="text-gray-700">{idea.revenueModel}</p>
+              </div>
+            )}
           </div>
 
           {idea.techStack && (
@@ -134,6 +160,32 @@ export default function IdeaGenerator() {
                 {idea.features.map((f: string, i: number) => (
                   <li key={i} className="text-sm text-gray-700 flex items-center gap-2">
                     <span className="text-[#FF6B00]">•</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {idea.validationPlan && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-gray-600 mb-2">🧪 Kế hoạch xác thực</p>
+              <ul className="space-y-1">
+                {idea.validationPlan.map((f: string, i: number) => (
+                  <li key={i} className="text-sm text-gray-700 flex items-center gap-2">
+                    <span className="text-emerald-500">•</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {idea.risks && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-gray-600 mb-2">⚠️ Rủi ro</p>
+              <ul className="space-y-1">
+                {idea.risks.map((f: string, i: number) => (
+                  <li key={i} className="text-sm text-gray-700 flex items-center gap-2">
+                    <span className="text-red-400">•</span> {f}
                   </li>
                 ))}
               </ul>

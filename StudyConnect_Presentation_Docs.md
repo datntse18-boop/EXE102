@@ -12,7 +12,7 @@ StudyConnect được xây dựng theo mô hình SaaS (Software as a Service) v�
 * **Frontend**: React.js (Vite, TypeScript, TailwindCSS, Lucide Icons) chạy trên cổng `http://localhost:5173`. Giao diện tối (Dark mode) mặc định chuẩn Obsidian Glassmorphism hiện đại, chuyên nghiệp.
 * **Backend**: Node.js (Express, TypeScript, JWT, bcrypt) chạy trên cổng `http://localhost:3000`.
 * **Database**: PostgreSQL lưu trữ trên nền tảng đám mây **Neon DB**, kết nối qua ORM **Prisma**.
-* **AI Integration**: Tích hợp trực tiếp với dòng mô hình **Google Gemini AI** thông qua API Key phục vụ chẩn đoán dữ liệu và tư vấn.
+* **AI Integration**: Google Gemini AI + **n8n orchestration** (webhook ưu tiên, fallback Gemini trực tiếp). Trang AI Support riêng cho SV/GV, Floating Copilot nối backend, lịch sử chat lưu PostgreSQL.
 
 ---
 
@@ -56,6 +56,12 @@ Hệ thống áp dụng biểu giá **Decoy Pricing (Giá chim mồi)** để k�
   * **Tiến độ & Đóng góp thành viên**: Đọc thống kê đầu việc (Task) được giao, số lượng task hoàn thành, đang làm, chưa làm của từng thành viên, kèm theo điểm số đánh giá chéo trung bình từ đồng đội (Peer Evaluation).
   * **Báo cáo tuần & Sức khỏe tài chính**: Đọc lịch sử achievements/blockers tuần và bảng điểm hòa vốn tài chính (LTV/CAC, Fixed/Variable Costs).
 * **Interactive Chatbot**: Cho phép người dùng chat trực tiếp với AI để hỏi thêm về tiến độ công việc, lỗ hổng tài liệu, giải pháp xử lý khó khăn hoặc chỉ số tài chính của nhóm.
+
+### 🤖 F. AI Support Hub + Floating Copilot + n8n (bắt buộc)
+* **Trang AI riêng theo vai trò**: `/ai-support` — chế độ **Sinh viên** và **Giảng viên**, có **lịch sử trò chuyện** lưu DB (`ai_conversations` / `ai_chat_messages`), **upload ảnh / báo cáo / file text**.
+* **Bong bóng AI (Floating Copilot)**: Đã liên kết API AI trung tâm (`/api/ai-support/chat`), không còn trả lời giả lập keyword; lịch sử được lưu và đồng bộ với Hub.
+* **Pipeline n8n**: Mọi tính năng AI ưu tiên gọi `N8N_WEBHOOK_URL` → workflow Gemini trong n8n; nếu n8n offline thì fallback Gemini trực tiếp. Hướng dẫn & workflow mẫu: thư mục `n8n/`.
+* **Idea Generator nâng cấp**: Xuất thêm persona, value proposition, revenue model, validation plan, risks — không chỉ 3 field cơ bản.
 
 ---
 
@@ -115,6 +121,14 @@ Dưới đây là 5 kịch bản hoàn hảo nhất để chạy demo trực ti�
 2. Hệ thống sẽ hiển thị bảng đóng góp thực tế của các thành viên: Tỷ lệ hoàn thành công việc, số lượng đầu việc, và điểm đánh giá chéo từ đồng đội.
 3. Nhấn **"Kích hoạt Chẩn đoán AI Toàn Năng"** → Trí tuệ nhân tạo sẽ quét qua: Business Model Canvas của nhóm, Slide outline, Báo cáo tuần, Tiến độ công việc và điểm Peer Evaluation của các thành viên để xuất ra báo cáo kiểm toán toàn diện 4 phần.
 4. Nhập câu hỏi vào chatbot ở góc dưới: *"Tại sao điểm đóng góp của Trần Thị Bích lại thấp hơn Lê Hoàng Minh?"* hoặc *"Kế hoạch tài chính của nhóm đã hợp lý chưa?"* → AI Cố Vấn sẽ đọc dữ liệu và trả lời tức thì một cách chi tiết.
+
+### 🎬 Kịch bản 6: AI Support Hub + Floating Copilot + n8n
+1. Đăng nhập **`alice@example.com`** → Sidebar **AI Hỗ trợ** (`/ai-support`) hoặc bấm bong bóng AI góc phải.
+2. Gửi câu hỏi tạo ý tưởng / phân tích BMC; kiểm tra trả lời thật (không phải keyword giả lập).
+3. Đính kèm file `.txt` / ảnh → AI phân tích nội dung file.
+4. Đóng tab chat → mở lại: **lịch sử vẫn còn** (đã lưu DB).
+5. Đăng nhập giảng viên **`carol@example.com`** → **AI Hỗ trợ GV** (`/ai-support?mode=teacher`) — hỏi gợi ý nhận xét báo cáo tuần.
+6. *(Nếu đã cấu hình n8n)* Mở n8n Executions → thấy request `feature: support_chat` từ backend.
 
 ---
 Chúc bạn có một buổi thuyết trình dự án thành công rực rỡ! 🚀

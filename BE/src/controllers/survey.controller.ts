@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { getGeminiModel } from '../utils/gemini'
+import { generateViaN8nOrGemini } from '../services/n8n.service'
 
 // POST /api/projects/:projectId/surveys
 export const addSurvey = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -96,9 +96,10 @@ Lưu ý:
 - "willingToPayRate" là tỉ lệ % số người sẵn sàng chi trả (willPayRate >= 3). Điền số nguyên từ 0-100.
 - "fitScore" là Điểm đánh giá mức độ Problem-Solution Fit (0-100).`
 
-    const model = getGeminiModel(req)
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
+    const { text } = await generateViaN8nOrGemini(
+      { feature: 'survey_analyze', prompt, expectJson: true, user: { id: req.user!.id, role: req.user!.role } },
+      req
+    )
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       res.status(500).json({ success: false, message: 'AI response parsing error' })

@@ -20,6 +20,7 @@ export default function CommandPalette() {
 
   const commands: CommandItem[] = [
     { id: 'dashboard', title: 'Bàn làm việc (Dashboard)', subtitle: 'Quản lý dự án, tasks và OKRs của nhóm', icon: <Compass size={14} />, path: '/dashboard' },
+    { id: 'ai_support', title: 'AI Hỗ trợ (Student / Teacher)', subtitle: 'Chat AI có lịch sử, upload file/báo cáo/ảnh qua n8n + Gemini', icon: <MessageSquare size={14} />, path: '/ai-support' },
     { id: 'profile', title: 'Trang cá nhân (Profile)', subtitle: 'Xem huy hiệu năng lực, gửi góp ý phản hồi', icon: <Award size={14} />, path: '/profile' },
     { id: 'irl', title: 'Đo lường IRL & Chỉ số Tài chính', subtitle: ' Steve Blank IRL checklist và tính toán CAC, LTV, Runway', icon: <TrendingUp size={14} />, path: '/startup-tools?tab=irl' },
     { id: 'valuation', title: 'Định giá Startup & Chia Cổ phần', subtitle: 'Phương pháp Berkus định giá và phân chia cổ phần đồng sáng lập', icon: <DollarSign size={14} />, path: '/startup-tools?tab=valuation' },

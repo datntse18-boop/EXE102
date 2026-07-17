@@ -26,6 +26,7 @@ import mentorRoutes from './routes/mentor.routes'
 import investmentRoutes from './routes/investment.routes'
 import githubRoutes from './routes/github.routes'
 import feedbackRoutes from './routes/feedback.routes'
+import aiSupportRoutes from './routes/aiSupport.routes'
 
 
 dotenv.config()
@@ -121,6 +122,7 @@ app.use('/api/mentor', mentorRoutes)
 app.use('/api/investments', investmentRoutes)
 app.use('/api/github', githubRoutes)
 app.use('/api/feedbacks', feedbackRoutes)
+app.use('/api/ai-support', aiSupportRoutes)
 
 
 // 404 handler

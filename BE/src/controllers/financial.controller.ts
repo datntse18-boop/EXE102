@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { getGeminiModel } from '../utils/gemini'
+import { generateViaN8nOrGemini } from '../services/n8n.service'
 
 // GET /api/projects/:projectId/financial
 export const getFinancialModel = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -70,9 +70,11 @@ Hãy đưa ra 3-4 câu nhận xét cụ thể, ngắn gọn bằng tiếng Việ
 3. Chỉ số LTV/CAC đã lành mạnh chưa (tỉ lệ vàng thường > 3)?
 4. Đề xuất trực tiếp cách tối ưu hóa chi phí hoặc doanh thu.`
 
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(prompt)
-      aiReviewText = result.response.text().trim()
+      const { text } = await generateViaN8nOrGemini(
+        { feature: 'financial_review', prompt, user: { id: req.user!.id, role: req.user!.role } },
+        req
+      )
+      aiReviewText = text
     }
 
     const updateData: any = {

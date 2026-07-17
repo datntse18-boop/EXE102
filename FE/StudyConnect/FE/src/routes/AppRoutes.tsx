@@ -34,6 +34,7 @@ import FinancialHub from '../pages/member/FinancialHub'
 import SlideOutline from '../pages/member/SlideOutline'
 import PaymentHistory from '../pages/member/PaymentHistory'
 import StartupCertificate from '../pages/member/StartupCertificate'
+import AiSupport from '../pages/member/AiSupport'
 import IdeationHub from '../pages/hubs/IdeationHub'
 import StartupToolsHub from '../pages/hubs/StartupToolsHub'
 import EvaluationHub from '../pages/hubs/EvaluationHub'
@@ -122,6 +123,7 @@ export default function AppRoutes() {
         <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><SlideOutline /></ProtectedRoute>} />
         <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PaymentHistory /></ProtectedRoute>} />
         <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupCertificate /></ProtectedRoute>} />
+        <Route path="ai-support" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><AiSupport /></ProtectedRoute>} />
 
         <Route path="team-management" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>

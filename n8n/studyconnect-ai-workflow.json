@@ -1,0 +1,82 @@
+{
+  "name": "StudyConnect AI Hub",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "studyconnect-ai",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-ai",
+      "name": "Webhook AI",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "webhookId": "studyconnect-ai"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst system = body.systemPrompt || 'Bạn là trợ lý AI StudyConnect.';\nconst history = (body.history || []).map(h => `${h.role}: ${h.content}`).join('\\n');\nconst attachments = (body.attachments || []).filter(a => a.textExcerpt).map(a => `File ${a.name}:\\n${a.textExcerpt}`).join('\\n\\n');\nconst prompt = [system, history && `Lịch sử:\\n${history}`, attachments, `Yêu cầu:\\n${body.prompt}`].filter(Boolean).join('\\n\\n');\nreturn [{ json: { ...body, fullPrompt: prompt, apiKey: body.geminiApiKey || '' } }];"
+      },
+      "id": "build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $json.apiKey }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{ \"parts\": [{ \"text\": {{ JSON.stringify($json.fullPrompt) }} }] }]\n}",
+        "options": {}
+      },
+      "id": "gemini-http",
+      "name": "Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst reply = raw?.candidates?.[0]?.content?.parts?.[0]?.text || raw?.error?.message || 'Không nhận được phản hồi từ Gemini.';\nreturn [{ json: { reply } }];"
+      },
+      "id": "extract-reply",
+      "name": "Extract Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1220, 300]
+    }
+  ],
+  "connections": {
+    "Webhook AI": {
+      "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Prompt": {
+      "main": [[{ "node": "Gemini API", "type": "main", "index": 0 }]]
+    },
+    "Gemini API": {
+      "main": [[{ "node": "Extract Reply", "type": "main", "index": 0 }]]
+    },
+    "Extract Reply": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

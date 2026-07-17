@@ -1,15 +1,15 @@
 import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { getGeminiModel } from '../utils/gemini'
+import { generateViaN8nOrGemini, emitN8nEvent } from '../services/n8n.service'
 
-// GET /api/chat/projects/:projectId/mentor
+// GET /api/mentor/projects/:projectId/mentor
 export const getMentorMessages = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { projectId } = req.params as { projectId: string }
     const messages = await prisma.aIMentorMessage.findMany({
       where: { projectId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     })
     res.json({ success: true, data: messages })
   } catch (err) {
@@ -18,7 +18,7 @@ export const getMentorMessages = async (req: AuthRequest, res: Response): Promis
   }
 }
 
-// POST /api/chat/projects/:projectId/mentor
+// POST /api/mentor/projects/:projectId/mentor
 export const sendMentorMessage = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { projectId } = req.params as { projectId: string }
@@ -29,73 +29,69 @@ export const sendMentorMessage = async (req: AuthRequest, res: Response): Promis
       return
     }
 
-    // Save user message
     const userMsg = await prisma.aIMentorMessage.create({
-      data: {
-        projectId,
-        role: 'user',
-        message
-      }
+      data: { projectId, role: 'user', message },
     })
 
-    // Fetch project
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { team: true }
+      include: { team: true, financialModel: true },
     })
 
-    // Fetch chat history
     const history = await prisma.aIMentorMessage.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
-      take: 15
+      take: 15,
     })
     const reversedHistory = history.reverse()
-    const historyPrompt = reversedHistory.map(h => `${h.role === 'user' ? 'Sinh viên' : 'AI Mentor'}: "${h.message}"`).join('\n')
 
-    const canvasText = project?.canvasModel 
-      ? `\n\nDưới đây là mô hình Canvas kinh doanh hiện tại của dự án: ${project.canvasModel}` 
+    const canvasText = project?.canvasModel
+      ? `\nCanvas hiện tại: ${String(project.canvasModel).slice(0, 1200)}`
+      : ''
+    const financeText = project?.financialModel
+      ? `\nTài chính: CAC=${project.financialModel.cac}, LTV=${project.financialModel.ltv}, price=${project.financialModel.sellingPrice}`
       : ''
 
-    const systemPrompt = `Bạn là Trợ lý Cố vấn AI (AI Startup Mentor) thuộc nền tảng StudyConnect.
-Môn học quản lý: Khởi nghiệp sáng tạo (EXE101/EXE201).
-Tên dự án hiện tại: "${project?.name || 'Chưa đặt tên'}"
-Mô tả dự án: "${project?.description || 'Chưa có mô tả'}"${canvasText}
+    const systemPrompt = `Bạn là Trợ lý Cố vấn AI (AI Startup Mentor) thuộc StudyConnect — môn EXE101/EXE201.
+Tên dự án: "${project?.name || 'Chưa đặt tên'}"
+Mô tả: "${project?.description || 'Chưa có mô tả'}"
+Nhóm: "${project?.team?.name || 'N/A'}"${canvasText}${financeText}
 
-Nhiệm vụ của bạn:
-- Hãy trả lời câu hỏi của sinh viên dưới vai trò một giảng viên cố vấn khởi nghiệp tận tâm, chuyên nghiệp, thông thái.
-- Định hướng sinh viên về pháp lý (luật doanh nghiệp Việt Nam, đăng ký hộ kinh doanh, sở hữu trí tuệ), mô hình doanh thu, lập kế hoạch tài chính (chi phí cố định, biến đổi, CAC, LTV), phát triển sản phẩm MVP và chiến lược tiếp thị (GTM).
-- Câu trả lời nên mang tính xây dựng, ngắn gọn, có cấu trúc rõ ràng bằng tiếng Việt. Tránh lý thuyết suông, hãy hướng sinh viên tới các bước thực thi thực tế.
-
-Lịch sử trò chuyện gần đây:
-${historyPrompt}
-
-Hãy phản hồi tin nhắn cuối cùng của Sinh viên: "${message}"`
+Nhiệm vụ: cố vấn khởi nghiệp thực chiến (pháp lý VN, doanh thu, MVP, GTM, tài chính).
+Trả lời tiếng Việt, có cấu trúc, actionable.`
 
     let aiReply = 'Tôi đang gặp lỗi kết nối với máy chủ AI. Vui lòng thử lại sau.'
     try {
-      const model = getGeminiModel(req)
-      const result = await model.generateContent(systemPrompt)
-      aiReply = result.response.text().trim()
-      
-      // Save AI reply
+      const { text, source } = await generateViaN8nOrGemini(
+        {
+          feature: 'mentor_chat',
+          systemPrompt,
+          prompt: message,
+          history: reversedHistory.slice(0, -1).map((h) => ({
+            role: h.role === 'user' ? 'user' : 'model',
+            content: h.message,
+          })),
+          context: { projectId },
+          user: { id: req.user!.id, role: req.user!.role, name: req.user!.name },
+        },
+        req
+      )
+      aiReply = text
+
       await prisma.aIMentorMessage.create({
-        data: {
-          projectId,
-          role: 'model',
-          message: aiReply
-        }
+        data: { projectId, role: 'model', message: aiReply },
       })
 
-      // Log AI Usage
       await prisma.aIUsage.create({
         data: {
           userId: req.user!.id,
           feature: 'analytics',
           prompt: message,
-          response: aiReply
-        }
+          response: aiReply,
+        },
       })
+
+      void emitN8nEvent('mentor_chat', { userId: req.user!.id, projectId, source })
     } catch (aiErr) {
       console.error('Gemini AI mentor error:', aiErr)
     }

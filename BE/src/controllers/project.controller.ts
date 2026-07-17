@@ -109,8 +109,7 @@ export const generateCanvasAI = async (req: AuthRequest, res: Response): Promise
       return
     }
 
-    const { getGeminiModel } = require('../utils/gemini')
-    const model = getGeminiModel(req)
+    const { generateViaN8nOrGemini } = require('../services/n8n.service')
 
     const prompt = `Bạn là trợ lý AI chuyên gia phân tích mô hình kinh doanh Canvas (Business Model Canvas - BMC).
 Hãy phác thảo mô hình Canvas 9 ô cho dự án khởi nghiệp sinh viên sau:
@@ -132,8 +131,10 @@ Hãy điền chi tiết và trả về chính xác định dạng JSON (chỉ JS
 
     let canvasJson = ''
     try {
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      const { text } = await generateViaN8nOrGemini(
+        { feature: 'generate_canvas', prompt, expectJson: true, user: { id: req.user!.id, role: req.user!.role } },
+        req
+      )
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         canvasJson = jsonMatch[0]

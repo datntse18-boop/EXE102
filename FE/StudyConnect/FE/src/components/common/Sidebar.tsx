@@ -97,6 +97,7 @@ export default function Sidebar() {
           icon: <LayoutDashboard size={14} />,
           items: [
             { to: '/dashboard', label: 'Bàn làm việc', icon: <Layers size={14} />, end: true },
+            { to: '/ai-support', label: 'AI Hỗ trợ', icon: <Sparkles size={14} /> },
             { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
           ]
         },
@@ -155,6 +156,7 @@ export default function Sidebar() {
           icon: <LayoutDashboard size={14} />,
           items: [
             { to: '/manager', label: 'Bàn làm việc', icon: <Layers size={14} />, end: true },
+            { to: '/ai-support?mode=teacher', label: 'AI Hỗ trợ GV', icon: <Sparkles size={14} /> },
             { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
           ]
         },
@@ -190,6 +192,7 @@ export default function Sidebar() {
           icon: <LayoutDashboard size={14} />,
           items: [
             { to: '/dashboard', label: 'Bàn chỉ huy Quản lý', icon: <Layers size={14} />, end: true },
+            { to: '/ai-support', label: 'AI Hỗ trợ', icon: <Sparkles size={14} /> },
             { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
           ]
         },

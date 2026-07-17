@@ -15,4 +15,7 @@ services:
       # JWT_SECRET      - studyconnect_super_secret_jwt_key_2026
       # JWT_REFRESH_SECRET - studyconnect_super_secret_refresh_key_2026
       # GEMINI_API_KEY  - Google Gemini API key
+      # N8N_WEBHOOK_URL - n8n webhook URL (StudyConnect AI Hub)
+      # N8N_EVENT_WEBHOOK_URL - optional n8n events webhook
+      # N8N_WEBHOOK_SECRET - optional shared secret header
       # CORS_ORIGIN     - https://your-app.vercel.app
