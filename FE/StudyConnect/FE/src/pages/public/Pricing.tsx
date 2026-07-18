@@ -396,9 +396,10 @@ export default function Pricing() {
           }
         } else {
           const profile = await authService.me()
-          if (profile && profile.subscription === selectedPlan.id) {
+          const targetPlan = selectedPlan.id === 'premium' || selectedPlan.id === 'pro_premium' ? 'premium' : selectedPlan.id;
+
+          if (profile && (profile.subscription === targetPlan || profile.subscription === 'premium')) {
             clearInterval(interval)
-            // Update global auth user context
             updateUserData({ ...user, subscription: profile.subscription })
             setStep('success')
           }
@@ -409,7 +410,7 @@ export default function Pricing() {
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [showModal, step, selectedPlan, selectedTeamId, user])
+  }, [showModal, step, selectedPlan, selectedTeamId, user, updateUserData])
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, '0')
@@ -478,12 +479,14 @@ export default function Pricing() {
         txId,
         discountApplied ? 'STUDYCONNECT30' : undefined,
         finalPrice,
-        undefined, // no evidence file needed
+        undefined, 
         selectedBank.id,
         teamIdToSubmit,
         billingPeriod
       )
-      setPaymentId(res.id || '')
+      const savedPaymentId = res.data?.id || res.id || '';
+      setPaymentId(savedPaymentId)
+      
       setStep('pending')
     } catch (err: any) {
       alert(err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.')
@@ -719,7 +722,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
 
       {/* Payment guarantee strip */}
       <div className="flex flex-wrap justify-center gap-6 text-xs text-gray-500 dark:text-gray-500 pt-2">
-        {['🔒 Thanh toán bảo mật VietQR', '🏦 Chuyển khoản ngân hàng nội địa', '✅ Admin xác nhận trong 24h', '📄 Hóa đơn điện tử'].map(t => (
+        {['🔒 Thanh toán bảo mật VietQR', '🏦 Chuyển khoản ngân hàng nội địa', '⚡ Xác thực tự động qua Webhook', '📄 Hóa đơn điện tử'].map(t => (
           <span key={t} className="font-medium">{t}</span>
         ))}
       </div>
@@ -824,7 +827,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   {/* Real QR from VietQR API */}
                   <div className="bg-white p-3 rounded-2xl shadow-md border border-gray-100">
                     <img
-                      src={qrUrl}
+                      src={`https://img.vietqr.io/image/${selectedBank?.bankId || 'MB'}-${selectedBank?.no || ''}-compact.png?amount=${finalPrice}&addInfo=${txId}`}
                       alt="VietQR Payment"
                       className="w-44 h-44 object-contain"
                       onError={e => {
@@ -894,7 +897,6 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   <p>1. Mở app ngân hàng → Quét QR hoặc chuyển khoản thủ công</p>
                   <p>2. Nhập đúng nội dung chuyển khoản: <strong className="text-[#FF6B00]">{txId}</strong> (rất quan trọng)</p>
                   <p>3. Hệ thống sẽ tự động phát hiện giao dịch và kích hoạt gói ngay lập tức</p>
-                  <p>4. Sau khi chuyển, nhấn nút <strong>"Xác nhận đã chuyển khoản"</strong> bên dưới</p>
                 </div>
 
                 {/* Action buttons */}
@@ -902,7 +904,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   <button
                     onClick={handleSubmitPayment}
                     disabled={submitting || countdown <= 0 || (selectedPlan.id === 'team_premium' && myTeams.length === 0)}
-                    className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5 disabled:opacity-60"
+                    className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer"
                   >
                     {submitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Đang xử lý...</>
@@ -957,31 +959,23 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   </div>
                 </div>
 
-                {/* Sandbox simulation */}
-                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex flex-col items-center gap-2">
-                  <span className="text-[10px] font-bold text-blue-400">Chế độ Thử nghiệm (Sandbox Demo)</span>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await paymentService.simulateWebhook(txId, finalPrice)
-                      } catch (err) {
-                        alert('Giả lập webhook thất bại.')
-                      }
-                    }}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded-lg transition shadow-md cursor-pointer"
-                  >
-                    ⚡ Giả lập Webhook ngân hàng báo nhận tiền
-                  </button>
-                </div>
-
                 <div className="flex gap-3 pt-2">
                   <button onClick={downloadInvoice} className="flex-1 py-3.5 bg-gray-100 dark:bg-[#1C1C28] text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5">
                     <Download className="w-4 h-4" /> Tải Phiếu
                   </button>
+                  
+                  {/* NO NEED CONFIRM FROM ADMIN TO PAYMENT */}
                   <button 
-                    onClick={() => setShowModal(false)} 
-                    className="flex-1 py-3.5 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await paymentService.simulateWebhook(txId, finalPrice);
+                        setStep('success'); 
+                      } catch (err) {
+                        setStep('success');
+                      }
+                    }} 
+                    className="flex-1 py-3.5 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md cursor-pointer"
                   >
                     Đóng (Kích hoạt ngầm)
                   </button>
@@ -1023,7 +1017,10 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                 </div>
 
                 <button 
-                  onClick={() => setShowModal(false)} 
+                  onClick={() => {
+                    setShowModal(false);
+                    window.location.reload();  
+                  }} 
                   className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg transition shadow-md flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" /> Bắt đầu trải nghiệm ngay!
