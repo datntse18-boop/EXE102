@@ -18,7 +18,7 @@ const generateTransactionCode = (): string => {
   return result
 }
 
-// GET /api/payments — Admin: all, others: own
+// 1. GET /api/payments — Admin: tất cả, người dùng thường: đơn của chính họ
 export const getPayments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const where: any = {}
@@ -36,6 +36,36 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+// 2. GET /api/payments/:id — Lấy chi tiết đơn hàng (Mới bổ sung để đối soát ngầm)
+export const getPaymentDetail = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    if (!id) {
+      res.status(400).json({ success: false, message: 'Yêu cầu mã định danh đơn hàng' });
+      return;
+    }
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { txId: id }
+        ]
+      }
+    });
+
+    if (!payment) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy đơn thanh toán này' });
+      return;
+    }
+
+    res.json({ success: true, data: payment });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 
 // POST /api/payments — Create PENDING payment
 export const createPayment = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -72,7 +102,7 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
         amount,
         plan: plan as any,
         status: 'pending',
-        txId: finalTxId,
+        txId: finalTxId, 
         evidence: null,
         bankId,
         teamId: teamId || null,

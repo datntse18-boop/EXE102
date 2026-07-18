@@ -245,6 +245,12 @@ export const paymentService = {
     return data.data
   },
 
+  // Hàm bổ trợ check chi tiết trạng thái đơn hàng (Mới bổ sung để đồng bộ Realtime)
+  getPaymentDetail: async (idOrTxId: string) => {
+    const { data } = await api.get(`/payments/${idOrTxId}`)
+    return data
+  },
+
   createPayment: async (
     plan: 'premium' | 'enterprise',
     txId?: string,
@@ -256,7 +262,7 @@ export const paymentService = {
     durationMonths?: number
   ) => {
     const { data } = await api.post('/payments', { plan, txId, discountCode, amount, evidence, bankId, teamId, durationMonths })
-    return data.data
+    return data
   },
 
   confirmPayment: async (id: string) => {
@@ -266,7 +272,7 @@ export const paymentService = {
 
   rejectPayment: async (id: string, reason?: string) => {
     const { data } = await api.patch(`/payments/${id}/reject`, { reason })
-    return data.data
+    return data
   },
 
   getStats: async () => {
@@ -284,7 +290,6 @@ export const paymentService = {
     return data.data
   },
 }
-
 
 export const aiService = {
   generateIdea: async (params: { targetUsers: string; problemArea: string; technology?: string }) => {
@@ -611,4 +616,3 @@ export const feedbackService = {
     return data
   }
 }
-
