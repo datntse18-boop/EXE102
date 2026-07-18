@@ -934,8 +934,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                       try {
                         // Gọi webhook giả lập nhận tiền tự động
                         await paymentService.simulateWebhook(txId, finalPrice);
-                        
-                        // Check chốt lại trạng thái hóa đơn dưới DB xem Admin có lỡ tay bấm Từ chối trước đó không
+                        // Check Admin có bấm Từ chối hay Xác nhận chưa
                         const checkDb = await paymentService.getPaymentDetail(paymentId || txId);
                         if (checkDb && (checkDb.data?.status === 'failed' || checkDb.status === 'failed')) {
                           setStep('failed');
