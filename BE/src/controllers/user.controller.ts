@@ -11,6 +11,7 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
     if (search) {
       where.OR = [
         { name: { contains: String(search), mode: 'insensitive' } },
+        { phone: { contains: String(search), mode: 'insensitive' } },
         { email: { contains: String(search), mode: 'insensitive' } },
       ]
     }
@@ -19,7 +20,7 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
 
     const users = await prisma.user.findMany({
       where,
-      select: { id: true, name: true, email: true, role: true, avatar: true, status: true, subscription: true, lastActive: true, createdAt: true },
+      select: { id: true, name: true, phone: true, email: true, role: true, avatar: true, status: true, subscription: true, lastActive: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     })
     res.json({ success: true, data: users })
@@ -34,7 +35,7 @@ export const getUserById = async (req: AuthRequest, res: Response): Promise<void
     const { id } = req.params as { id: string }
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, email: true, role: true, avatar: true, status: true, subscription: true, lastActive: true, createdAt: true, skills: true, desiredRole: true, commitmentHours: true, pastProjects: true, classCode: true },
+      select: { id: true, name: true, phone: true, email: true, role: true, avatar: true, status: true, subscription: true, lastActive: true, createdAt: true, skills: true, desiredRole: true, commitmentHours: true, pastProjects: true, classCode: true },
     })
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' })
@@ -73,7 +74,7 @@ export const updateUserRole = async (req: AuthRequest, res: Response): Promise<v
     const user = await prisma.user.update({
       where: { id },
       data: { role },
-      select: { id: true, name: true, email: true, role: true, status: true },
+      select: { id: true, name: true, phone: true, role: true, status: true },
     })
     res.json({ success: true, data: user })
   } catch (err) {
@@ -94,7 +95,7 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
     const updated = await prisma.user.update({
       where: { id },
       data: { status: newStatus },
-      select: { id: true, name: true, email: true, role: true, status: true },
+      select: { id: true, name: true, phone: true, role: true, status: true },
     })
     res.json({ success: true, data: updated })
   } catch (err) {
@@ -123,7 +124,7 @@ export const updateUserSubscription = async (req: AuthRequest, res: Response): P
     const user = await prisma.user.update({
       where: { id },
       data: { subscription: subscription as any },
-      select: { id: true, name: true, email: true, role: true, status: true, subscription: true },
+      select: { id: true, name: true, phone: true, role: true, status: true, subscription: true },
     })
 
     res.json({ success: true, data: user })
@@ -136,7 +137,7 @@ export const updateUserSubscription = async (req: AuthRequest, res: Response): P
 // PATCH /api/users/profile — Self update
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, avatar, classCode, skills, desiredRole, commitmentHours, pastProjects } = req.body
+    const { name, avatar, classCode, skills, desiredRole, commitmentHours, pastProjects, email } = req.body
     
     // Normalize classCode if provided
     const normalizedClassCode = classCode !== undefined 
@@ -147,6 +148,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       where: { id: req.user!.id },
       data: { 
         name, 
+        email,
         avatar, 
         classCode: normalizedClassCode, 
         skills, 
@@ -154,7 +156,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         commitmentHours: commitmentHours !== undefined ? Number(commitmentHours) : undefined, 
         pastProjects 
       },
-      select: { id: true, name: true, email: true, role: true, avatar: true, status: true, subscription: true, classCode: true, skills: true, desiredRole: true, commitmentHours: true, pastProjects: true },
+      select: { id: true, name: true, phone: true, email: true, role: true, avatar: true, status: true, subscription: true, classCode: true, skills: true, desiredRole: true, commitmentHours: true, pastProjects: true },
     })
     res.json({ success: true, data: user })
   } catch (err) {
@@ -165,28 +167,38 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 // POST /api/users — Admin and Leader (Dean) only
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, email, role, classCode, subscription, skills, desiredRole } = req.body
+    const { name, phone, email, role, classCode, subscription, skills, desiredRole } = req.body
     let { password } = req.body
     if (!password) {
-      password = 'password123'
+      password = '123456'
     }
 
-    if (!name || !email || !role) {
-      res.status(400).json({ success: false, message: 'Name, email, and role are required' })
+    if (!name || !phone || !role) {
+      res.status(400).json({ success: false, message: 'Họ tên, số điện thoại và vai trò là bắt buộc' })
+      return
+    }
+
+    if (!/^0[0-9]{9}$/.test(phone)) {
+      res.status(400).json({ success: false, message: 'Số điện thoại phải gồm đúng 10 chữ số bắt đầu bằng số 0' })
+      return
+    }
+
+    if (!/^[1-9]{6}$/.test(password)) {
+      res.status(400).json({ success: false, message: 'Mật khẩu phải gồm đúng 6 chữ số từ 1 đến 9' })
       return
     }
 
     // Block 'admin' role from creation
     const validRoles = ['member', 'leader', 'manager']
     if (!validRoles.includes(role)) {
-      res.status(400).json({ success: false, message: 'Invalid role. Cannot create admin account.' })
+      res.status(400).json({ success: false, message: 'Vai trò không hợp lệ. Không thể tạo tài khoản admin.' })
       return
     }
 
-    // Check if email already exists
-    const existing = await prisma.user.findUnique({ where: { email } })
+    // Check if phone already exists
+    const existing = await prisma.user.findUnique({ where: { phone } })
     if (existing) {
-      res.status(400).json({ success: false, message: 'Email already exists' })
+      res.status(400).json({ success: false, message: 'Số điện thoại đã tồn tại trên hệ thống' })
       return
     }
 
@@ -194,7 +206,8 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
+        phone,
+        email: email || null,
         password: hashedPassword,
         role: role as any,
         classCode: classCode || null,
@@ -202,10 +215,12 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         avatar: role === 'manager' ? '👩‍🔬' : role === 'leader' ? '👩‍🎓' : '👤',
         skills: skills || null,
         desiredRole: desiredRole || null,
+        isVerified: true
       },
       select: {
         id: true,
         name: true,
+        phone: true,
         email: true,
         role: true,
         status: true,
@@ -280,6 +295,7 @@ export const getUnassignedStudents = async (req: AuthRequest, res: Response): Pr
       select: {
         id: true,
         name: true,
+        phone: true,
         email: true,
         skills: true,
         desiredRole: true,
@@ -294,4 +310,3 @@ export const getUnassignedStudents = async (req: AuthRequest, res: Response): Pr
     res.status(500).json({ success: false, message: 'Failed to fetch unassigned students' })
   }
 }
-

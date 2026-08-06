@@ -54,51 +54,51 @@ enum AIFeature {
 }
 
 model User {
-  id           String           @id @default(cuid())
-  name         String
-  email        String           @unique
-  password     String
-  role         Role             @default(member)
-  avatar       String?
-  status       String           @default("active") // active | suspended
-  subscription SubscriptionPlan @default(free)
+  id                    String           @id @default(cuid())
+  name                  String
+  phone                 String           @unique
+  email                 String?
+  password              String
+  role                  Role             @default(member)
+  avatar                String?
+  status                String           @default("active") // active | suspended
+  subscription          SubscriptionPlan @default(free)
   subscriptionExpiresAt DateTime?
-  hasUsedTrial  Boolean          @default(false)
-  classCode    String?          // Unique class code for lecturers or joined class code for students
-  skills       String?          // Professional skills (comma separated)
-  desiredRole  String?          // Desired role in team
-  commitmentHours Int?          // Available hours per week
-  pastProjects String?          // Past project experience
-  phone        String?          @unique
-  isVerified   Boolean          @default(true)
-  verificationCode String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  lastActive   DateTime         @default(now())
+  hasUsedTrial          Boolean          @default(false)
+  classCode             String?          // Unique class code for lecturers or joined class code for students
+  skills                String?          // Professional skills (comma separated)
+  desiredRole           String?          // Desired role in team
+  commitmentHours      Int?             // Available hours per week
+  pastProjects          String?          // Past project experience
+  isVerified            Boolean          @default(true)
+  verificationCode      String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  lastActive            DateTime         @default(now())
 
   // Relations
-  teamMemberships TeamMember[]
-  ledTeams        Team[]        @relation("TeamLeader")
-  tasks           Task[]        @relation("TaskAssignee")
-  sentInvitations     Invitation[]  @relation("InvitationSender")
-  receivedInvitations Invitation[]  @relation("InvitationReceiver")
-  payments        Payment[]
-  aiUsages        AIUsage[]
-  refreshTokens   RefreshToken[]
-  lecturerSlots   MentoringSlot[] @relation("LecturerSlots")
-  chatMessages    ChatMessage[]
-  evaluationsGiven   PeerEvaluation[] @relation("Evaluator")
+  teamMemberships     TeamMember[]
+  ledTeams            Team[]           @relation("TeamLeader")
+  tasks               Task[]           @relation("TaskAssignee")
+  sentInvitations     Invitation[]     @relation("InvitationSender")
+  receivedInvitations Invitation[]     @relation("InvitationReceiver")
+  payments            Payment[]
+  aiUsages            AIUsage[]
+  refreshTokens       RefreshToken[]
+  lecturerSlots       MentoringSlot[]  @relation("LecturerSlots")
+  chatMessages        ChatMessage[]
+  evaluationsGiven    PeerEvaluation[] @relation("Evaluator")
   evaluationsReceived PeerEvaluation[] @relation("Evaluatee")
-  gradesGiven        TeamGrade[]      @relation("GradedBy")
-  jobApplications    JobApplication[]
-  projectVotes       ProjectVote[]
-  projectComments    ProjectComment[]
-  notifications      Notification[]
-  balance            Int              @default(100000)
-  investments        Investment[]
-  leaveRequests      LeaveRequest[]
-  feedbacksSubmitted Feedback[]       @relation("FeedbackUser")
-  feedbacksReplied   Feedback[]       @relation("FeedbackRepliedBy")
+  gradesGiven         TeamGrade[]      @relation("GradedBy")
+  jobApplications     JobApplication[]
+  projectVotes        ProjectVote[]
+  projectComments     ProjectComment[]
+  notifications       Notification[]
+  balance             Int              @default(100000)
+  investments         Investment[]
+  leaveRequests       LeaveRequest[]
+  feedbacksSubmitted  Feedback[]       @relation("FeedbackUser")
+  feedbacksReplied    Feedback[]       @relation("FeedbackRepliedBy")
 
   @@map("users")
 }
@@ -115,30 +115,30 @@ model RefreshToken {
 }
 
 model Team {
-  id          String     @id @default(cuid())
-  name        String
-  description String
-  leaderId    String
-  leader      User       @relation("TeamLeader", fields: [leaderId], references: [id])
-  status      TeamStatus @default(active)
-  healthScore Int        @default(100) // 0-100
-  classCode   String?    // Associated class code for the team
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                    String           @id @default(cuid())
+  name                  String
+  description           String
+  leaderId              String
+  leader                User             @relation("TeamLeader", fields: [leaderId], references: [id])
+  status                TeamStatus       @default(active)
+  healthScore           Int              @default(100) // 0-100
+  classCode             String?          // Associated class code for the team
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   // Relations
-  members        TeamMember[]
-  projects       Project[]
-  weeklyReports  WeeklyReport[]
-  mentoringSlots MentoringSlot[]
-  peerEvaluations PeerEvaluation[]
-  grades          TeamGrade[]
-  jobPosts        JobPost[]
-  chatMessages    ChatMessage[]
-  payments        Payment[]
-  subscription    SubscriptionPlan @default(free)
+  members               TeamMember[]
+  projects              Project[]
+  weeklyReports         WeeklyReport[]
+  mentoringSlots        MentoringSlot[]
+  peerEvaluations       PeerEvaluation[]
+  grades                TeamGrade[]
+  jobPosts              JobPost[]
+  chatMessages          ChatMessage[]
+  payments              Payment[]
+  subscription          SubscriptionPlan @default(free)
   subscriptionExpiresAt DateTime?
-  leaveRequests   LeaveRequest[]
+  leaveRequests         LeaveRequest[]
 
   @@map("teams")
 }
@@ -156,29 +156,29 @@ model TeamMember {
 }
 
 model Project {
-  id          String  @id @default(cuid())
-  teamId      String
-  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  name        String
-  description String
-  status      String  @default("planning") // planning | active | completed
-  milestone   Int     @default(1)
-  progress      Int     @default(0) // 0-100
+  id            String    @id @default(cuid())
+  teamId        String
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name          String
+  description   String
+  status        String    @default("planning") // planning | active | completed
+  milestone     Int       @default(1)
+  progress      Int       @default(0) // 0-100
   dueDate       DateTime?
   logoUrl       String?
   pitchVideoUrl String?
-  canvasModel   String?     // JSON string representing 9 boxes of Business Model Canvas
-  isPublic      Boolean     @default(false)
-  slideOutline  String?     // JSON string representing slide outline
-  githubUrl     String?     // URL to the group's GitHub repository
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  canvasModel   String?   // JSON string representing 9 boxes of Business Model Canvas
+  isPublic      Boolean   @default(false)
+  slideOutline  String?   // JSON string representing slide outline
+  githubUrl     String?   // URL to the group's GitHub repository
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
-  tasks Task[]
-  votes ProjectVote[]
-  comments ProjectComment[]
-  objectives ProjectObjective[]
+  tasks          Task[]
+  votes          ProjectVote[]
+  comments       ProjectComment[]
+  objectives     ProjectObjective[]
   surveys        CustomerSurvey[]
   financialModel FinancialModel?
   investments    Investment[]
@@ -219,32 +219,32 @@ model Invitation {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id])
-  amount    Float
-  plan      SubscriptionPlan
-  status    PaymentStatus @default(pending)
-  txId      String?
-  evidence  String?
-  bankId    String?
-  teamId    String?
-  team      Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  durationMonths Int    @default(1)
-  createdAt DateTime      @default(now())
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  amount         Float
+  plan           SubscriptionPlan
+  status         PaymentStatus    @default(pending)
+  txId           String?
+  evidence       String?
+  bankId         String?
+  teamId         String?
+  team           Team?            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  durationMonths Int              @default(1)
+  createdAt      DateTime         @default(now())
 
   @@map("payments")
 }
 
 model AIUsage {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  feature   AIFeature
-  count     Int       @default(1)
-  date      DateTime  @default(now())
-  prompt    String?
-  response  String?
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
+  feature  AIFeature
+  count    Int       @default(1)
+  date     DateTime  @default(now())
+  prompt   String?
+  response String?
 
   @@map("ai_usages")
 }
@@ -264,19 +264,19 @@ model WeeklyReport {
 }
 
 model MentoringSlot {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   lecturerId     String
-  lecturer       User     @relation("LecturerSlots", fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturer       User      @relation("LecturerSlots", fields: [lecturerId], references: [id], onDelete: Cascade)
   startTime      DateTime
   endTime        DateTime
-  status         String   @default("available") // available | booked
+  status         String    @default("available") // available | booked
   bookedByTeamId String?
-  bookedByTeam   Team?    @relation(fields: [bookedByTeamId], references: [id], onDelete: SetNull)
+  bookedByTeam   Team?     @relation(fields: [bookedByTeamId], references: [id], onDelete: SetNull)
   topic          String?
   meetingLink    String?
   meetingMinutes String?
-  isSigned       Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  isSigned       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
 
   @@map("mentoring_slots")
 }
@@ -302,16 +302,16 @@ model PeerEvaluation {
 }
 
 model TeamGrade {
-  id          String   @id @default(cuid())
-  teamId      String
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  milestone   Int
-  score       Float
-  feedback    String?
+  id           String   @id @default(cuid())
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  milestone    Int
+  score        Float
+  feedback     String?
   rubricScores String?  // JSON string representing rubric scores
-  gradedById  String
-  gradedBy    User     @relation("GradedBy", fields: [gradedById], references: [id])
-  createdAt   DateTime @default(now())
+  gradedById   String
+  gradedBy     User     @relation("GradedBy", fields: [gradedById], references: [id])
+  createdAt    DateTime @default(now())
 
   @@map("team_grades")
 }
@@ -393,55 +393,55 @@ model ChatMessage {
 }
 
 model ProjectObjective {
-  id        String             @id @default(cuid())
-  projectId String
-  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title     String
-  progress  Int                @default(0)
-  createdAt DateTime           @default(now())
+  id         String             @id @default(cuid())
+  projectId  String
+  project    Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title      String
+  progress   Int                @default(0)
+  createdAt  DateTime           @default(now())
   keyResults ProjectKeyResult[]
 
   @@map("project_objectives")
 }
 
 model ProjectKeyResult {
-  id          String           @id @default(cuid())
-  objectiveId String
-  objective   ProjectObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
-  title       String
-  targetValue Int              @default(100)
-  currentValue Int             @default(0)
-  unit        String           @default("%")
-  createdAt   DateTime         @default(now())
+  id           String           @id @default(cuid())
+  objectiveId  String
+  objective    ProjectObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  title        String
+  targetValue  Int              @default(100)
+  currentValue Int              @default(0)
+  unit         String           @default("%")
+  createdAt    DateTime         @default(now())
 
   @@map("project_key_results")
 }
 
 model CustomerSurvey {
-  id            String   @id @default(cuid())
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   respondentName String?
-  feedbackText  String
-  willPayRate   Int      @default(0)
-  demographics  String?
-  createdAt     DateTime @default(now())
+  feedbackText   String
+  willPayRate    Int      @default(0)
+  demographics   String?
+  createdAt      DateTime @default(now())
 
   @@map("customer_surveys")
 }
 
 model FinancialModel {
-  id            String   @id @default(cuid())
-  projectId     String   @unique
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  fixedCosts    Float    @default(0)
-  variableCosts Float    @default(0)
-  sellingPrice  Float    @default(0)
-  projectedSales Int     @default(0)
-  cac           Float    @default(0)
-  ltv           Float    @default(0)
-  aiReview      String?
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  projectId      String   @unique
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fixedCosts     Float    @default(0)
+  variableCosts  Float    @default(0)
+  sellingPrice   Float    @default(0)
+  projectedSales Int      @default(0)
+  cac            Float    @default(0)
+  ltv            Float    @default(0)
+  aiReview       String?
+  updatedAt      DateTime @updatedAt
 
   @@map("financial_models")
 }
@@ -476,24 +476,23 @@ model LeaveRequest {
   status    String   @default("pending") // pending | accepted | rejected
   createdAt DateTime @default(now())
 
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, userId])
   @@map("leave_requests")
 }
 
 model Feedback {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation("FeedbackUser", fields: [userId], references: [id], onDelete: Cascade)
-  content      String
-  reply        String?
-  repliedById  String?
-  repliedBy    User?    @relation("FeedbackRepliedBy", fields: [repliedById], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("FeedbackUser", fields: [userId], references: [id], onDelete: Cascade)
+  content     String
+  reply       String?
+  repliedById String?
+  repliedBy   User?    @relation("FeedbackRepliedBy", fields: [repliedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("feedbacks")
 }
-
