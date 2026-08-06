@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 
@@ -11,7 +12,7 @@ const generateTokens = (userId: string, role: string, phone: string) => {
     { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any }
   )
   const refreshToken = jwt.sign(
-    { id: userId },
+    { id: userId, jti: crypto.randomBytes(16).toString('hex') },
     process.env.JWT_REFRESH_SECRET!,
     { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any }
   )
@@ -48,7 +49,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const hashed = await bcrypt.hash(password, 10)
 
-    const user = await prisma.user.create({
+    // Tạo user mới, không cấp token tự động nữa
+    await prisma.user.create({
       data: { 
         name, 
         phone, 
@@ -56,34 +58,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         password: hashed, 
         role: 'member', 
         isVerified: true
-      },
-      select: { 
-        id: true, 
-        name: true, 
-        phone: true, 
-        email: true, 
-        role: true, 
-        avatar: true, 
-        subscription: true, 
-        subscriptionExpiresAt: true, 
-        hasUsedTrial: true, 
-        status: true, 
-        classCode: true 
-      },
+      }
     })
-
-    const { accessToken, refreshToken } = generateTokens(user.id, user.role, user.phone!)
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt } })
 
     res.status(201).json({ 
       success: true, 
-      message: 'Đăng ký tài khoản thành công! 🎉',
-      data: { 
-        user, 
-        accessToken,
-        refreshToken
-      } 
+      message: 'Đăng ký tài khoản thành công! Vui lòng đăng nhập. 🎉'
     })
   } catch (err) {
     console.error(err)

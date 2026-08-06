@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate, Link } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
 import { authService } from '../../services/apiServices'
 
 export default function Register() {
-  const { login } = useAuth()
   const nav = useNavigate()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -56,13 +54,11 @@ export default function Register() {
 
     setLoading(true)
     try {
-      const res = await authService.register(name, phone, password)
-      if (res.data?.accessToken) {
-        sessionStorage.setItem('accessToken', res.data.accessToken)
-        sessionStorage.setItem('refreshToken', res.data.refreshToken)
-        await login(phone, password)
-        nav('/dashboard')
-      }
+      // Gọi API đăng ký
+      await authService.register(name, phone, password)
+      
+      // Đăng ký thành công -> Điều hướng về trang đăng nhập (/login)
+      nav('/login')
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại kết nối server.')
     } finally {

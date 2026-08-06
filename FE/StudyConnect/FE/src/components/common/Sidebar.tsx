@@ -14,11 +14,8 @@ import {
   MessagesSquare,
   Lightbulb,
   ClipboardList,
-  CalendarDays,
   Clock3,
-  Award,
   FileSpreadsheet,
-  Search,
   Eye,
   FilePieChart,
   BookOpen,
@@ -28,7 +25,8 @@ import {
   CreditCard,
   TrendingUp,
   Inbox,
-  FileText
+  CalendarDays,
+  DollarSign
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { teamService } from '../../services/apiServices'
@@ -55,6 +53,7 @@ export default function Sidebar() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     overview: true,
+    finance: true,
     billing: true,
     ideation: true,
     workspace: true,
@@ -64,7 +63,6 @@ export default function Sidebar() {
     admin_tools: true
   })
 
-  // Dynamically check if the student is a team leader
   useEffect(() => {
     const checkLeader = async () => {
       if (user && role === 'member') {
@@ -87,7 +85,6 @@ export default function Sidebar() {
     }))
   }
 
-  // Categories definition depending on role
   const getSidebarData = (): SidebarCategory[] => {
     if (role === 'member') {
       return [
@@ -220,13 +217,21 @@ export default function Sidebar() {
           ]
         },
         {
+          id: 'finance',
+          label: 'Tài chính',
+          icon: <DollarSign size={14} />,
+          items: [
+            { to: '/admin/revenue', label: 'Báo cáo doanh thu', icon: <TrendingUp size={14} /> },
+            { to: '/admin/payments', label: 'Lịch sử giao dịch', icon: <Clock3 size={14} /> }
+          ]
+        },
+        {
           id: 'admin_tools',
           label: 'Quản trị hệ thống',
           icon: <Shield size={14} />,
           items: [
             { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={14} /> },
             { to: '/admin/subscriptions', label: 'Gói dịch vụ', icon: <CreditCard size={14} /> },
-            { to: '/admin/payments', label: 'Dòng tiền giao dịch', icon: <TrendingUp size={14} /> },
             { to: '/admin/reports', label: 'Báo cáo hệ thống', icon: <FilePieChart size={14} /> },
             { to: '/admin/feedbacks', label: 'Ý kiến góp ý', icon: <Inbox size={14} /> }
           ]
@@ -265,7 +270,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Toggle Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)} 
         className="md:hidden fixed bottom-4 right-4 z-50 p-3.5 bg-[#FF6B00] text-white rounded-full shadow-xl transition hover:bg-[#E85A00]"
@@ -273,10 +277,8 @@ export default function Sidebar() {
         <Menu size={20} />
       </button>
       
-      {/* Sidebar Main */}
       <aside className={`fixed md:sticky md:top-0 self-start w-64 border-r border-[#161622] bg-[#0B0B0F] text-gray-300 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 h-screen flex flex-col z-20 shadow-[4px_0_20px_rgba(0,0,0,0.3)] shrink-0`}>
         
-        {/* Logo Section */}
         <div className="p-6 border-b border-[#161622] flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF801A] text-white shadow-md shadow-orange-500/10">
@@ -302,13 +304,11 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Navigation Accordion */}
         <nav className="p-4 space-y-4 flex-1 overflow-y-auto pr-2 scrollbar-thin">
           {sidebarData.map(category => {
             const isCatOpen = !!openCategories[category.id]
             return (
               <div key={category.id} className="space-y-1">
-                {/* Category Header */}
                 <button
                   onClick={() => toggleCategory(category.id)}
                   className="w-full flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg hover:text-white hover:bg-white/5 transition duration-200"
@@ -323,10 +323,9 @@ export default function Sidebar() {
                   />
                 </button>
 
-                {/* Sub items collapsible container */}
                 <div
                   className={`grid transition-all duration-300 ease-in-out ${
-                    isCatOpen ? 'grid-rows-[1fr] opacity-100 mt-1' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                    isCatOpen ? 'grid-rows-1 opacity-100 mt-1' : 'grid-rows-0 opacity-0 pointer-events-none'
                   }`}
                 >
                   <div className="overflow-hidden space-y-1 pl-2 border-l border-[#161622] ml-4">
@@ -343,6 +342,7 @@ export default function Sidebar() {
                           }`
                         }
                       >
+                        {item.icon}
                         <span>{item.label}</span>
                       </NavLink>
                     ))}
@@ -353,7 +353,6 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Logout Button */}
         <div className="p-4 border-t border-[#161622]">
           <button 
             onClick={() => setIsAiModalOpen(true)} 
