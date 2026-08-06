@@ -11,7 +11,6 @@ import VerifyCertificate from '../pages/public/VerifyCertificate'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 
-
 // Member pages
 import Dashboard from '../pages/member/Dashboard'
 import Profile from '../pages/member/Profile'
@@ -55,7 +54,7 @@ import SubscriptionManagement from '../pages/admin/SubscriptionManagement'
 import PaymentManagement from '../pages/admin/PaymentManagement'
 import ReportManagement from '../pages/admin/ReportManagement'
 import FeedbackManagement from '../pages/admin/FeedbackManagement'
-
+import AdminRevenue from '../pages/admin/AdminRevenue'
 
 const ProtectedRoute = ({ children, allowed }: { children: JSX.Element; allowed: string[] }) => {
   const { role } = useAuth()
@@ -65,7 +64,6 @@ const ProtectedRoute = ({ children, allowed }: { children: JSX.Element; allowed:
   return children
 }
 
-// Role-based redirect after login
 const RoleBasedRedirect = () => {
   const { role } = useAuth()
   if (role === 'guest') return <Navigate to="/" replace />
@@ -77,27 +75,23 @@ const RoleBasedRedirect = () => {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Root redirect - role-based */}
       <Route path="/app" element={<RoleBasedRedirect />} />
 
       {/* Public pages */}
-      <Route path="/" element={<PublicLayout />}> 
+      <Route path="/" element={<PublicLayout />}>
         <Route index element={<Landing />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="verify-certificate" element={<VerifyCertificate />} />
       </Route>
 
-      <Route element={<AuthLayout />}> 
+      <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
 
-      {/* Member / authenticated (MainLayout) */}
+      {/* Member / authenticated */}
       <Route path="/" element={<MainLayout />}>
-        <Route
-          path="dashboard"
-          element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><Dashboard /></ProtectedRoute>}
-        />
+        <Route path="dashboard" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><Dashboard /></ProtectedRoute>} />
         <Route path="profile" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Profile /></ProtectedRoute>} />
         <Route path="ideation-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><IdeationHub /></ProtectedRoute>} />
         <Route path="startup-tools" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupToolsHub /></ProtectedRoute>} />
@@ -122,11 +116,10 @@ export default function AppRoutes() {
         <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><SlideOutline /></ProtectedRoute>} />
         <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PaymentHistory /></ProtectedRoute>} />
         <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupCertificate /></ProtectedRoute>} />
-
         <Route path="team-management" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>
 
-      {/* Manager routes (MainLayout) */}
+      {/* Manager routes */}
       <Route path="/manager" element={<MainLayout />}>
         <Route index element={<ProtectedRoute allowed={['manager','admin']}><ManagerDashboard /></ProtectedRoute>} />
         <Route path="teams" element={<ProtectedRoute allowed={['manager','admin']}><TeamMonitoring /></ProtectedRoute>} />
@@ -134,15 +127,15 @@ export default function AppRoutes() {
         <Route path="invitations" element={<ProtectedRoute allowed={['manager','admin']}><Invitations /></ProtectedRoute>} />
       </Route>
 
-      {/* Admin routes (AdminLayout) */}
+      {/* Admin routes */}
       <Route path="/admin" element={<MainLayout />}>
         <Route index element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute allowed={['admin', 'leader']}><UserManagement /></ProtectedRoute>} />
-        <Route path="subscriptions" element={<ProtectedRoute allowed={['admin']}><SubscriptionManagement /></ProtectedRoute>} />
+        <Route path="revenue" element={<ProtectedRoute allowed={['admin']}><AdminRevenue /></ProtectedRoute>} />
         <Route path="payments" element={<ProtectedRoute allowed={['admin']}><PaymentManagement /></ProtectedRoute>} />
+        <Route path="subscriptions" element={<ProtectedRoute allowed={['admin']}><SubscriptionManagement /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowed={['admin']}><ReportManagement /></ProtectedRoute>} />
         <Route path="feedbacks" element={<ProtectedRoute allowed={['admin']}><FeedbackManagement /></ProtectedRoute>} />
-
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
