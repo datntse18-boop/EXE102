@@ -15,6 +15,7 @@ enum Role {
   leader
   manager
   admin
+  supervisor
 }
 
 enum SubscriptionPlan {

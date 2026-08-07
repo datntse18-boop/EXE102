@@ -4,6 +4,45 @@ import process from 'process'
 
 const prisma = new PrismaClient()
 
+// Hàm khởi tạo tài khoản Supervisor riêng biệt
+async function seedSupervisorAccount() {
+  try {
+    const phone = '0909000000'
+    const hashedPassword = await bcrypt.hash('123456', 10)
+
+    const existingUser = await prisma.user.findUnique({ where: { phone } })
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          name: 'Ms.Phan Hà',
+          phone: phone,
+          email: 'phanha.supervisor@studyconnect.internal',
+          password: hashedPassword,
+          role: 'supervisor',
+          status: 'active',
+          subscription: 'enterprise',
+          avatar: '👩‍💼',
+        },
+      })
+      console.log('✅ Đã tạo thành công tài khoản Supervisor: Ms.Phan Hà (0909000000)')
+    } else {
+      await prisma.user.update({
+        where: { phone },
+        data: {
+          name: 'Ms.Phan Hà',
+          role: 'supervisor',
+          password: hashedPassword,
+          status: 'active',
+        },
+      })
+      console.log('🔄 Đã cập nhật thông tin tài khoản Supervisor: Ms.Phan Hà')
+    }
+  } catch (error) {
+    console.error('❌ Lỗi khi khởi tạo tài khoản Supervisor:', error)
+  }
+}
+
 async function main() {
   console.log('🌱 Seeding StudyConnect database...')
 
@@ -33,6 +72,9 @@ async function main() {
   await prisma.team.deleteMany()
   await prisma.refreshToken.deleteMany()
   await prisma.user.deleteMany()
+
+  // Gọi hàm seed tài khoản Supervisor
+  await seedSupervisorAccount()
 
   // Password hashing for default users
   const hashedPassword = await bcrypt.hash('123456', 10)
@@ -150,7 +192,7 @@ async function main() {
     },
   })
 
-  console.log('✅ Users created (6 accounts)')
+  console.log('✅ Users created')
 
   // ─────────────────────────────────────────
   // TEAMS
@@ -367,12 +409,13 @@ async function main() {
 
   console.log('\n🎉 Database seeded successfully!')
   console.log('\n📱 Tài khoản đăng nhập bằng SĐT (mật khẩu mặc định: 123456):')
-  console.log('  0901000001  → Admin IT (Quản trị hệ thống)')
-  console.log('  0901000002  → Leader/Dean (Quản lý Khoa)')
-  console.log('  0901000003  → Manager/Giảng viên')
-  console.log('  0901000004  → Member/Sinh viên (Trưởng nhóm)')
-  console.log('  0901000005  → Member/Sinh viên')
-  console.log('  0901000006  → Member/Sinh viên')
+  console.log('   0909000000  → Supervisor (Ms.Phan Hà)')
+  console.log('   0901000001  → Admin IT (Quản trị hệ thống)')
+  console.log('   0901000002  → Leader/Dean (Quản lý Khoa)')
+  console.log('   0901000003  → Manager/Giảng viên')
+  console.log('   0901000004  → Member/Sinh viên (Trưởng nhóm)')
+  console.log('   0901000005  → Member/Sinh viên')
+  console.log('   0901000006  → Member/Sinh viên')
 }
 
 main()

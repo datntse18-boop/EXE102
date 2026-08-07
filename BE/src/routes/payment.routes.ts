@@ -9,12 +9,12 @@ router.post('/webhook', handleBankWebhook)
 
 router.use(authenticate)
 
-router.get('/', getPayments)
-router.get('/stats', authorize('admin'), getPaymentStats)
+router.get('/', authorize('admin', 'supervisor'), getPayments)
+router.get('/stats', authorize('admin', 'supervisor'), getPaymentStats)
 router.post('/', createPayment)
 router.post('/trial', activateTrial)
 router.get('/:id', getPaymentDetail) 
-router.patch('/:id/confirm', authorize('admin'), confirmPayment)
-router.patch('/:id/reject', authorize('admin'), rejectPayment)
+router.patch('/:id/confirm', authorize('admin', 'supervisor'), confirmPayment)
+router.patch('/:id/reject', authorize('admin', 'supervisor'), rejectPayment)
 
 export default router

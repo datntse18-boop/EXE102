@@ -75,8 +75,8 @@ export const checkAiLimit = async (req: AuthRequest, res: Response, next: NextFu
 
     const { id, role, subscription } = req.user
     
-    // Admin, manager, leader bypass limit
-    if (role === 'admin' || role === 'manager' || role === 'leader') {
+    // Admin, manager, leader, supervisor bypass limit
+    if (role === 'admin' || role === 'manager' || role === 'leader' || role === 'supervisor') {
       next()
       return
     }
