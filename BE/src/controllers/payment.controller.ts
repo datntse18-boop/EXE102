@@ -18,11 +18,13 @@ const generateTransactionCode = (): string => {
   return result
 }
 
-// 1. GET /api/payments — Admin: tất cả, người dùng thường: đơn của chính họ
+// 1. GET /api/payments — Admin/Supervisor/Manager: tất cả, người dùng thường: đơn của chính họ
 export const getPayments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const where: any = {}
-    if (req.user!.role !== 'admin' && req.user!.role !== 'leader') {
+    const userRole = req.user!.role
+    // Cho phép admin, supervisor, manager xem toàn bộ danh sách thanh toán
+    if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'manager' && userRole !== 'leader') {
       where.userId = req.user!.id
     }
 
@@ -37,7 +39,7 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
   }
 }
 
-// 2. GET /api/payments/:id — Lấy chi tiết đơn hàng (Mới bổ sung để đối soát ngầm)
+// 2. GET /api/payments/:id — Lấy chi tiết đơn hàng
 export const getPaymentDetail = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
@@ -163,7 +165,6 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         }
       })
 
-      // Create notification for team leader
       await prisma.notification.create({
         data: {
           userId: payment.userId,
@@ -189,7 +190,6 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         },
       })
 
-      // Create notification for user
       await prisma.notification.create({
         data: {
           userId: payment.userId,
@@ -206,7 +206,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
   }
 }
 
-// PATCH /api/payments/:id/reject — Admin rejects payment
+// PATCH /api/payments/:id/reject — Admin/Supervisor rejects payment
 export const rejectPayment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string
@@ -223,7 +223,6 @@ export const rejectPayment = async (req: AuthRequest, res: Response): Promise<vo
       data: { status: 'failed' },
     })
 
-    // Notify user
     await prisma.notification.create({
       data: {
         userId: payment.userId,
@@ -239,7 +238,7 @@ export const rejectPayment = async (req: AuthRequest, res: Response): Promise<vo
   }
 }
 
-// GET /api/payments/stats — Admin only
+// GET /api/payments/stats
 export const getPaymentStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const payments = await prisma.payment.findMany()
@@ -266,21 +265,17 @@ export const getPaymentStats = async (req: AuthRequest, res: Response): Promise<
   }
 }
 
-// POST /api/payments/webhook — TỰ ĐỘNG PHÊ DUYỆT THANH TOÁN THỰC TẾ QUA SEPAY / CASSO WH
+// POST /api/payments/webhook
 export const handleBankWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Linh hoạt nhận dữ liệu từ các bên (SePay dùng body chứa transactionContent hoặc content)
     const transactionContent = req.body.transactionContent || req.body.content || req.body.description || ''
     const amountIn = Number(req.body.amountIn || req.body.transferAmount || 0)
     
-    console.log(`[BANK WEBHOOK RECEIVE] Nội dung: "${transactionContent}", Số tiền: ${amountIn}`)
-
     if (!transactionContent) {
       res.status(400).json({ success: false, message: 'Invalid webhook data' })
       return
     }
 
-    // Biến đổi chuỗi thành chữ hoa và lọc mã khớp định dạng chuẩn mã giao dịch: SCxxxxxx
     const match = transactionContent.toUpperCase().match(/SC[A-Z0-9]{6,8}/)
     if (!match) {
       res.json({ success: true, message: 'Webhook received but contents do not contain standard SC code' })
@@ -289,7 +284,6 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
 
     const extractedTxId = match[0]
 
-    // Truy vấn hóa đơn đang treo khớp với mã chuyển khoản sinh ra từ hệ thống
     const payment = await prisma.payment.findFirst({
       where: { txId: extractedTxId, status: 'pending' }
     })
@@ -299,14 +293,11 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
       return
     }
 
-    // Kiểm tra tính hợp lệ về số tiền nhận được (Sai số tối đa cho phép là 0 VNĐ để tránh gian lận)
     if (amountIn > 0 && amountIn < payment.amount) {
-      console.warn(`[PAYMENT WARNING] Hóa đơn ${payment.id} cần ${payment.amount} nhưng chỉ nhận được ${amountIn}`)
       res.json({ success: true, message: 'Amount in is less than billing amount. Keeping pending status.' })
       return
     }
 
-    // Cập nhật trạng thái hóa đơn thành Thành Công ngay lập tức
     await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'completed' }
@@ -314,12 +305,8 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
 
     const duration = payment.durationMonths || 1
     let expiresAt = new Date()
-
-    // Lấy thông tin user để lưu vết thông báo hệ thống
     const userObj = await prisma.user.findUnique({ where: { id: payment.userId } })
-    const userEmail = userObj?.email || 'N/A'
 
-    // XỬ LÝ NÂNG CẤP TỰ ĐỘNG & CỘNG DỒN HẠN DÙNG
     if (payment.teamId) {
       const team = await prisma.team.findUnique({ where: { id: payment.teamId } })
       let baseDate = new Date()
@@ -337,7 +324,6 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         }
       })
 
-      // Tạo thông báo tự động cho Trưởng nhóm
       await prisma.notification.create({
         data: {
           userId: payment.userId,
@@ -346,11 +332,6 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
           link: '/pricing',
         }
       })
-
-      console.log(`\n======================================================`)
-      console.log(`[AUTOMATED SUCCESS] Đã nâng cấp Gói Nhóm tự động thành công qua Webhook`)
-      console.log(`Đến: ${userEmail} | Hạn dùng mới: ${expiresAt.toLocaleString('vi-VN')}`)
-      console.log(`======================================================\n`)
     } else {
       let baseDate = new Date()
       if (userObj && userObj.subscriptionExpiresAt && new Date(userObj.subscriptionExpiresAt) > baseDate) {
@@ -367,30 +348,23 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         }
       })
 
-      // Tạo thông báo tự động cho Cá nhân người dùng
       await prisma.notification.create({
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói thành công tự động!',
-          content: `Hệ thống đã xác nhận khoản chuyển khoản của bạn cho hóa đơn ${extractedTxId}. Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Hệ thống đã xác nhận khoản chuyển khoản của bạn cho hóa đơn ${extractedTxId}. Gói đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })
-
-      console.log(`\n======================================================`)
-      console.log(`[AUTOMATED SUCCESS] Đã nâng cấp Gói Cá nhân tự động thành công qua Webhook`)
-      console.log(`Đến: ${userEmail} | Hạn dùng mới: ${expiresAt.toLocaleString('vi-VN')}`)
-      console.log(`======================================================\n`)
     }
 
     res.json({ success: true, message: `Payment ${extractedTxId} confirmed & subscription upgraded automatically` })
   } catch (err) {
-    console.error('Webhook Error:', err)
     res.status(500).json({ success: false, message: 'Webhook processing failed' })
   }
 }
 
-// POST /api/payments/trial — Activate 3-day free trial
+// POST /api/payments/trial
 export const activateTrial = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id
@@ -401,7 +375,7 @@ export const activateTrial = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     if (user.hasUsedTrial) {
-      res.status(400).json({ success: false, message: 'Bạn đã sử dụng gói dùng thử 3 ngày rồi. Mỗi tài khoản chỉ được dùng thử 1 lần duy nhất.' })
+      res.status(400).json({ success: false, message: 'Bạn đã sử dụng gói dùng thử 3 ngày rồi.' })
       return
     }
 
@@ -435,7 +409,6 @@ export const activateTrial = async (req: AuthRequest, res: Response): Promise<vo
       data: updatedUser
     })
   } catch (err) {
-    console.error(err)
     res.status(500).json({ success: false, message: 'Server error' })
   }
 }

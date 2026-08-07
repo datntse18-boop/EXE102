@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react'
 import { authService } from '../services/apiServices'
 
-export type Role = 'guest' | 'member' | 'leader' | 'manager' | 'admin'
+export type Role = 'guest' | 'member' | 'leader' | 'manager' | 'admin' | 'supervisor'
 
 type User = {
   id: string

@@ -49,7 +49,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const hashed = await bcrypt.hash(password, 10)
 
-    // Tạo user mới, không cấp token tự động nữa
     await prisma.user.create({
       data: { 
         name, 

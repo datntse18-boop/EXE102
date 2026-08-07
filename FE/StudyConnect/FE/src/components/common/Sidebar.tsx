@@ -10,17 +10,10 @@ import {
   ChevronDown,
   LayoutDashboard,
   FolderKanban,
-  GraduationCap,
-  MessagesSquare,
-  Lightbulb,
   ClipboardList,
   Clock3,
   FileSpreadsheet,
-  Eye,
-  FilePieChart,
-  BookOpen,
   Settings,
-  Briefcase,
   Layers,
   CreditCard,
   TrendingUp,
@@ -51,6 +44,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
   const [isTeamLeader, setIsTeamLeader] = useState(false)
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     overview: true,
     finance: true,
@@ -86,6 +80,20 @@ export default function Sidebar() {
   }
 
   const getSidebarData = (): SidebarCategory[] => {
+    if (role === 'supervisor') {
+      return [
+        {
+          id: 'finance',
+          label: 'Tài chính',
+          icon: <DollarSign size={14} />,
+          items: [
+            { to: '/admin/revenue', label: 'Báo cáo doanh thu', icon: <TrendingUp size={14} /> },
+            { to: '/admin/payments', label: 'Lịch sử giao dịch', icon: <Clock3 size={14} /> }
+          ]
+        }
+      ]
+    }
+
     if (role === 'member') {
       return [
         {
@@ -107,161 +115,28 @@ export default function Sidebar() {
           ]
         },
         {
-          id: 'ideation',
-          label: 'Ý tưởng & Kết nối',
-          icon: <Lightbulb size={14} />,
-          items: [
-            { to: '/ideation-hub', label: 'Kết nối & Ý tưởng', icon: <Lightbulb size={14} /> }
-          ]
-        },
-        {
           id: 'workspace',
           label: 'Không gian làm việc',
           icon: <FolderKanban size={14} />,
           items: [
             { to: '/workspace', label: 'Bảng Kanban', icon: <ClipboardList size={14} /> },
-            { to: '/startup-tools', label: 'Bộ công cụ Startup', icon: <FolderKanban size={14} /> },
             ...(isTeamLeader ? [{ to: '/team-management', label: 'Quản lý thành viên', icon: <Settings size={14} /> }] : [])
           ]
-        },
-        {
-          id: 'mentorship',
-          label: 'Cố vấn & Đánh giá',
-          icon: <GraduationCap size={14} />,
-          items: [
-            { to: '/mentorship-booking', label: 'Đặt lịch cố vấn', icon: <Clock3 size={14} /> },
-            { to: '/evaluation-hub', label: 'Đánh giá & Sổ điểm', icon: <GraduationCap size={14} /> }
-          ]
-        },
-        {
-          id: 'community',
-          label: 'Cộng đồng',
-          icon: <MessagesSquare size={14} />,
-          items: [
-            { to: '/community-hub', label: 'Mạng lưới cộng đồng', icon: <MessagesSquare size={14} /> }
-          ]
         }
       ]
     }
 
-    if (role === 'manager') {
-      return [
-        {
-          id: 'overview',
-          label: 'Mentor Hub',
-          icon: <LayoutDashboard size={14} />,
-          items: [
-            { to: '/manager', label: 'Bàn làm việc', icon: <Layers size={14} />, end: true },
-            { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
-          ]
-        },
-        {
-          id: 'grading',
-          label: 'Giám sát & Đánh giá',
-          icon: <GraduationCap size={14} />,
-          items: [
-            { to: '/manager/teams', label: 'Giám sát nhóm', icon: <Eye size={14} /> },
-            { to: '/weekly-checkin', label: 'Báo cáo tuần của nhóm', icon: <CalendarDays size={14} /> },
-            { to: '/mentorship-booking', label: 'Mở lịch hẹn cố vấn', icon: <Clock3 size={14} /> },
-            { to: '/gradebook', label: 'Sổ điểm Lớp học', icon: <FileSpreadsheet size={14} /> },
-            { to: '/manager/invitations', label: 'Quản lý yêu cầu', icon: <Inbox size={14} /> }
-          ]
-        },
-        {
-          id: 'workspace',
-          label: 'Tài nguyên chung',
-          icon: <FolderKanban size={14} />,
-          items: [
-            { to: '/project-showcase', label: 'Trưng bày dự án', icon: <Eye size={14} /> },
-            { to: '/syllabus', label: 'Đề cương môn học', icon: <BookOpen size={14} /> }
-          ]
-        }
-      ]
-    }
-
-    if (role === 'leader') {
-      return [
-        {
-          id: 'overview',
-          label: 'Overview',
-          icon: <LayoutDashboard size={14} />,
-          items: [
-            { to: '/dashboard', label: 'Bàn chỉ huy Quản lý', icon: <Layers size={14} />, end: true },
-            { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
-          ]
-        },
-        {
-          id: 'grading',
-          label: 'Giám sát & Quản lý',
-          icon: <GraduationCap size={14} />,
-          items: [
-            { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={14} /> },
-            { to: '/gradebook', label: 'Sổ điểm toàn khoa', icon: <FileSpreadsheet size={14} /> },
-            { to: '/weekly-checkin', label: 'Báo cáo tuần toàn khoa', icon: <CalendarDays size={14} /> },
-            { to: '/project-showcase', label: 'Trưng bày dự án', icon: <Eye size={14} /> },
-            { to: '/syllabus', label: 'Đề cương môn học', icon: <BookOpen size={14} /> }
-          ]
-        }
-      ]
-    }
-
-    if (role === 'admin') {
-      return [
-        {
-          id: 'overview',
-          label: 'Overview',
-          icon: <LayoutDashboard size={14} />,
-          items: [
-            { to: '/admin', label: 'Tổng đài Admin', icon: <Layers size={14} />, end: true },
-            { to: '/profile', label: 'Trang cá nhân', icon: <User size={14} /> }
-          ]
-        },
-        {
-          id: 'finance',
-          label: 'Tài chính',
-          icon: <DollarSign size={14} />,
-          items: [
-            { to: '/admin/revenue', label: 'Báo cáo doanh thu', icon: <TrendingUp size={14} /> },
-            { to: '/admin/payments', label: 'Lịch sử giao dịch', icon: <Clock3 size={14} /> }
-          ]
-        },
-        {
-          id: 'admin_tools',
-          label: 'Quản trị hệ thống',
-          icon: <Shield size={14} />,
-          items: [
-            { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={14} /> },
-            { to: '/admin/subscriptions', label: 'Gói dịch vụ', icon: <CreditCard size={14} /> },
-            { to: '/admin/reports', label: 'Báo cáo hệ thống', icon: <FilePieChart size={14} /> },
-            { to: '/admin/feedbacks', label: 'Ý kiến góp ý', icon: <Inbox size={14} /> }
-          ]
-        },
-        {
-          id: 'workspace',
-          label: 'Quản lý chung',
-          icon: <FolderKanban size={14} />,
-          items: [
-            { to: '/gradebook', label: 'Sổ điểm Hệ thống', icon: <FileSpreadsheet size={14} /> },
-            { to: '/job-board', label: 'Quản lý tuyển dụng', icon: <Briefcase size={14} /> },
-            { to: '/project-showcase', label: 'Trưng bày dự án', icon: <Eye size={14} /> }
-          ]
-        }
-      ]
-    }
-
-    return []
+    return [] 
   }
 
   const roleBadge = () => {
     switch (role) {
       case 'admin':
-        return { label: 'Admin (IT)', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', icon: <Shield className="w-3 h-3" /> }
-      case 'manager':
-        return { label: 'Giảng viên', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: <Users className="w-3 h-3" /> }
-      case 'leader':
-        return { label: 'Quản lý (Dean)', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: <Sparkles className="w-3 h-3" /> }
+        return { label: 'Admin', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', icon: <Shield className="w-3 h-3" /> }
+      case 'supervisor':
+        return { label: 'Supervisor', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: <Users className="w-3 h-3" /> }
       default:
-        return { label: isTeamLeader ? 'Trưởng nhóm' : 'Sinh viên', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', icon: <User className="w-3 h-3" /> }
+        return { label: 'User', color: 'bg-gray-500/10 text-gray-400 border-gray-500/20', icon: <User className="w-3 h-3" /> }
     }
   }
 
@@ -270,103 +145,53 @@ export default function Sidebar() {
 
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
-        className="md:hidden fixed bottom-4 right-4 z-50 p-3.5 bg-[#FF6B00] text-white rounded-full shadow-xl transition hover:bg-[#E85A00]"
-      >
+      <button onClick={() => setIsOpen(!isOpen)} className="md:hidden fixed bottom-4 right-4 z-50 p-3.5 bg-[#FF6B00] text-white rounded-full shadow-xl hover:bg-[#E85A00]">
         <Menu size={20} />
       </button>
       
-      <aside className={`fixed md:sticky md:top-0 self-start w-64 border-r border-[#161622] bg-[#0B0B0F] text-gray-300 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 h-screen flex flex-col z-20 shadow-[4px_0_20px_rgba(0,0,0,0.3)] shrink-0`}>
-        
+      <aside className={`fixed md:sticky md:top-0 w-64 border-r border-[#161622] bg-[#0B0B0F] text-gray-300 h-screen flex flex-col z-20 transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 border-b border-[#161622] flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF801A] text-white shadow-md shadow-orange-500/10">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-black text-white tracking-tight">
-              Study<span className="text-[#FF6B00]">Connect</span>
-            </span>
+            <div className="w-8 h-8 rounded-xl bg-[#FF6B00] flex items-center justify-center"><Sparkles className="text-white w-4 h-4" /></div>
+            <span className="text-lg font-black text-white">Study<span className="text-[#FF6B00]">Connect</span></span>
           </div>
           {user && (
-            <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-2xl border border-white/5 shadow-inner">
-              <div className="text-3xl bg-white/10 border border-white/10 w-11 h-11 rounded-xl flex items-center justify-center">
-                {user.avatar ? <span className="text-lg">{user.avatar}</span> : <User className="w-5 h-5 text-gray-400" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-black text-white truncate">{user.name}</div>
-                <div className={`flex items-center gap-1 text-[8px] font-black px-2 py-0.5 rounded-full border ${badge.color} mt-1 w-max uppercase tracking-wider`}>
-                  {badge.icon}
-                  {badge.label}
-                </div>
+            <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-2xl border border-white/5">
+              <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">{user.avatar}</div>
+              <div>
+                <div className="text-[11px] font-black text-white">{user.name}</div>
+                <div className={`flex items-center gap-1 text-[8px] px-2 py-0.5 rounded-full border ${badge.color} mt-1 w-max`}>{badge.icon}{badge.label}</div>
               </div>
             </div>
           )}
         </div>
 
-        <nav className="p-4 space-y-4 flex-1 overflow-y-auto pr-2 scrollbar-thin">
-          {sidebarData.map(category => {
-            const isCatOpen = !!openCategories[category.id]
-            return (
-              <div key={category.id} className="space-y-1">
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg hover:text-white hover:bg-white/5 transition duration-200"
-                >
-                  <span className="flex items-center gap-2">
-                    {category.icon}
-                    {category.label}
-                  </span>
-                  <ChevronDown
-                    size={12}
-                    className={`transform transition-transform duration-300 ${isCatOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    isCatOpen ? 'grid-rows-1 opacity-100 mt-1' : 'grid-rows-0 opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <div className="overflow-hidden space-y-1 pl-2 border-l border-[#161622] ml-4">
-                    {category.items.map(item => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.end}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 ${
-                            isActive
-                              ? 'bg-gradient-to-r from-orange-600/20 to-orange-500/10 text-white border-l-2 border-[#FF6B00] shadow-[0_0_15px_rgba(255,107,0,0.08)]'
-                              : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                          }`
-                        }
-                      >
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </NavLink>
-                    ))}
-                  </div>
+        <nav className="p-4 space-y-4 flex-1 overflow-y-auto">
+          {sidebarData.map(category => (
+            <div key={category.id} className="space-y-1">
+              <button onClick={() => toggleCategory(category.id)} className="w-full flex items-center justify-between text-[10px] font-bold uppercase py-1.5 px-3 rounded-lg hover:text-white">
+                <span className="flex items-center gap-2">{category.icon}{category.label}</span>
+                <ChevronDown size={12} className={`transform ${openCategories[category.id] ? 'rotate-180' : ''}`} />
+              </button>
+              {openCategories[category.id] && (
+                <div className="pl-2 border-l border-[#161622] ml-4 space-y-1">
+                  {category.items.map(item => (
+                    <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-bold ${isActive ? 'bg-orange-500/10 text-white border-l-2 border-[#FF6B00]' : 'text-gray-400 hover:text-white'}`}>
+                      {item.icon}<span>{item.label}</span>
+                    </NavLink>
+                  ))}
                 </div>
-              </div>
-            )
-          })}
+              )}
+            </div>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-[#161622]">
-          <button 
-            onClick={() => setIsAiModalOpen(true)} 
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/15 transition duration-300 shadow-sm mb-2.5"
-          >
-            <Sparkles size={14} />
-            Cấu hình Gemini AI
+          <button onClick={() => setIsAiModalOpen(true)} className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-[11px] font-bold bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 mb-2.5">
+            <Sparkles size={14} /> Cấu hình Gemini AI
           </button>
-          <button 
-            onClick={logout} 
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl text-[11px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/15 transition duration-300 shadow-sm"
-          >
-            <LogOut size={14} />
-            Đăng xuất tài khoản
+          <button onClick={logout} className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-[11px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20">
+            <LogOut size={14} /> Đăng xuất
           </button>
         </div>
         <AiConfigModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
