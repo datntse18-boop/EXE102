@@ -73,7 +73,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // POST /api/auth/login
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { phone, password } = req.body
+    const phone = req.body.phone || req.body.identifier
+    const { password } = req.body
     if (!phone || !password) {
       res.status(400).json({ success: false, message: 'Số điện thoại và mật khẩu là bắt buộc' })
       return
