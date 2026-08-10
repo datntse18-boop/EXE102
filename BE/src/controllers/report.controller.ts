@@ -66,7 +66,7 @@ export const getAIUsageReport = async (req: AuthRequest, res: Response): Promise
     // Aggregate by user
     const byUser: Record<string, { name: string; email: string; total: number; features: Record<string, number> }> = {}
     for (const u of usages) {
-      if (!byUser[u.userId]) byUser[u.userId] = { name: u.user.name, email: u.user.email, total: 0, features: {} }
+      if (!byUser[u.userId]) byUser[u.userId] = { name: u.user.name || '', email: u.user.email || '', total: 0, features: {} }
       byUser[u.userId].total += u.count
       byUser[u.userId].features[u.feature] = (byUser[u.userId].features[u.feature] || 0) + u.count
     }
