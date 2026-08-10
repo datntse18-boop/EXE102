@@ -88,7 +88,7 @@ async function main() {
     data: {
       id: 'u-admin-001',
       name: 'Nguyễn Đức Duy (Admin IT)',
-      phone: '0901000001',
+      phone: '0909000001',
       email: 'david@example.com',
       password: hashedPassword,
       role: 'admin',
@@ -410,7 +410,7 @@ async function main() {
   console.log('\n🎉 Database seeded successfully!')
   console.log('\n📱 Tài khoản đăng nhập bằng SĐT (mật khẩu mặc định: 123456):')
   console.log('   0909000000  → Supervisor (Ms.Phan Hà)')
-  console.log('   0901000001  → Admin IT (Quản trị hệ thống)')
+  console.log('   0909000001  → Admin IT (Quản trị hệ thống)')
   console.log('   0901000002  → Leader/Dean (Quản lý Khoa)')
   console.log('   0901000003  → Manager/Giảng viên')
   console.log('   0901000004  → Member/Sinh viên (Trưởng nhóm)')
