@@ -1,18 +1,13 @@
 import api from './api'
 
 export const authService = {
-  login: async (identifier: string, password: string) => {
-    const { data } = await api.post('/auth/login', { identifier, password })
+  login: async (phone: string, password: string) => {
+    const { data } = await api.post('/auth/login', { phone, password })
     return data.data // { user, accessToken, refreshToken }
   },
 
-  register: async (name: string, email: string, password: string, phone: string) => {
-    const { data } = await api.post('/auth/register', { name, email, password, phone })
-    return data
-  },
-
-  verifyOtp: async (identifier: string, code: string) => {
-    const { data } = await api.post('/auth/verify-otp', { identifier, code })
+  register: async (name: string, phone: string, password: string, email?: string) => {
+    const { data } = await api.post('/auth/register', { name, phone, password, email })
     return data
   },
 
@@ -45,7 +40,7 @@ export const userService = {
     return data.data
   },
 
-  createUser: async (user: { name: string; email: string; password?: string; role: string; classCode?: string; subscription?: string }) => {
+  createUser: async (user: { name: string; phone: string; password?: string; email?: string; role: string; classCode?: string; subscription?: string }) => {
     const { data } = await api.post('/users', user)
     return data.data
   },
@@ -65,15 +60,15 @@ export const userService = {
     return data.data
   },
 
-  updateProfile: async (profile: { name?: string; avatar?: string; skills?: string; desiredRole?: string; commitmentHours?: number; pastProjects?: string; classCode?: string }) => {
+  updateProfile: async (profile: { name?: string; email?: string; avatar?: string; skills?: string; desiredRole?: string; commitmentHours?: number; pastProjects?: string; classCode?: string }) => {
     const { data } = await api.patch('/users/profile', profile)
     return data.data
   },
 
   deleteUser: async (id: string) => {
     const { data } = await api.delete(`/users/${id}`)
-    return data
-  },
+    return data.data
+  }
 }
 
 export const teamService = {
@@ -245,6 +240,11 @@ export const paymentService = {
     return data.data
   },
 
+  getPaymentDetail: async (idOrTxId: string) => {
+    const { data } = await api.get(`/payments/${idOrTxId}`)
+    return data
+  },
+
   createPayment: async (
     plan: 'premium' | 'enterprise',
     txId?: string,
@@ -256,7 +256,7 @@ export const paymentService = {
     durationMonths?: number
   ) => {
     const { data } = await api.post('/payments', { plan, txId, discountCode, amount, evidence, bankId, teamId, durationMonths })
-    return data.data
+    return data
   },
 
   confirmPayment: async (id: string) => {
@@ -266,7 +266,7 @@ export const paymentService = {
 
   rejectPayment: async (id: string, reason?: string) => {
     const { data } = await api.patch(`/payments/${id}/reject`, { reason })
-    return data.data
+    return data
   },
 
   getStats: async () => {
@@ -284,7 +284,6 @@ export const paymentService = {
     return data.data
   },
 }
-
 
 export const aiService = {
   generateIdea: async (params: { targetUsers: string; problemArea: string; technology?: string }) => {
@@ -652,4 +651,3 @@ export const feedbackService = {
     return data
   }
 }
-

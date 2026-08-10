@@ -20,81 +20,43 @@
 @layer base {
   html, body, #root {
     height: 100%;
+    margin: 0;
+    padding: 0;
   }
   body {
     @apply bg-[var(--color-bg)] text-[var(--color-text)] antialiased;
     font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
-    margin: 0;
     letter-spacing: -0.010em;
   }
   a { @apply text-[var(--color-primary)] font-semibold transition-colors duration-200; }
 
-  /* ── Global input/select/textarea fix – readable in BOTH light & dark ── */
-  input,
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="search"],
-  input[type="date"],
-  input[type="time"],
-  textarea,
-  select {
+  /* Inputs fix */
+  input, input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="tel"], input[type="url"], input[type="search"],
+  input[type="date"], input[type="time"], textarea, select {
     color: #1E1E24;
     background-color: #ffffff;
   }
 
-  .dark input,
-  .dark input[type="text"],
-  .dark input[type="email"],
-  .dark input[type="password"],
-  .dark input[type="number"],
-  .dark input[type="tel"],
-  .dark input[type="url"],
-  .dark input[type="search"],
-  .dark input[type="date"],
-  .dark input[type="time"],
-  .dark textarea,
-  .dark select {
+  .dark input, .dark input[type="text"], .dark input[type="email"], .dark input[type="password"],
+  .dark input[type="number"], .dark input[type="tel"], .dark input[type="url"], .dark input[type="search"],
+  .dark input[type="date"], .dark input[type="time"], .dark textarea, .dark select {
     color: #F3F4F6;
     background-color: #1C1C28;
     caret-color: #FF6B00;
   }
 
-  /* Placeholder text – always visible */
-  input::placeholder,
-  textarea::placeholder {
-    color: #9CA3AF;
-    opacity: 1;
-  }
-  .dark input::placeholder,
-  .dark textarea::placeholder {
-    color: #6B7280;
-    opacity: 1;
-  }
+  input::placeholder, textarea::placeholder { color: #9CA3AF; opacity: 1; }
+  .dark input::placeholder, .dark textarea::placeholder { color: #6B7280; opacity: 1; }
 
-  /* Select dropdown options */
-  select option {
-    background-color: #ffffff;
-    color: #1E1E24;
-  }
-  .dark select option {
-    background-color: #1C1C28;
-    color: #F3F4F6;
-  }
+  select option { background-color: #ffffff; color: #1E1E24; }
+  .dark select option { background-color: #1C1C28; color: #F3F4F6; }
 
-  /* Autofill fix – Chrome overrides bg on autofill */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
+  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
     -webkit-text-fill-color: #1E1E24;
     box-shadow: 0 0 0px 1000px #ffffff inset;
   }
-  .dark input:-webkit-autofill,
-  .dark input:-webkit-autofill:hover,
-  .dark input:-webkit-autofill:focus {
+  .dark input:-webkit-autofill, .dark input:-webkit-autofill:hover, .dark input:-webkit-autofill:focus {
     -webkit-text-fill-color: #F3F4F6;
     box-shadow: 0 0 0px 1000px #1C1C28 inset;
   }
@@ -120,16 +82,19 @@
     @apply border border-gray-200 text-gray-700 bg-white font-semibold px-5 py-2.5 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200;
   }
 
-  .logo {
-    height: 40px;
-  }
-
-  .container {
-    @apply max-w-7xl mx-auto px-6;
-  }
+  .logo { height: 40px; }
+  .container { @apply max-w-7xl mx-auto px-6; }
 }
 
-/* Custom Animations */
+/* Accordion Smooth Height Transition Utilities */
+.grid-rows-0 {
+  grid-template-rows: 0fr;
+}
+.grid-rows-1 {
+  grid-template-rows: 1fr;
+}
+
+/* Animations & Scrollbar */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -139,45 +104,23 @@
   animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #E2E8F0;
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #CBD5E1;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333344; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #444455; }
 
-/* ── Dark mode: force ALL inputs with bg-white to be readable ── */
-/* This catches all existing inputs that have inline bg-white without dark variant */
-.dark input.bg-white,
-.dark textarea.bg-white,
-.dark select.bg-white,
-.dark input[class*="bg-white"],
-.dark textarea[class*="bg-white"],
-.dark select[class*="bg-white"],
-.dark input[class*="bg-gray-50"],
-.dark textarea[class*="bg-gray-50"] {
+.dark input.bg-white, .dark textarea.bg-white, .dark select.bg-white,
+.dark input[class*="bg-white"], .dark textarea[class*="bg-white"], .dark select[class*="bg-white"],
+.dark input[class*="bg-gray-50"], .dark textarea[class*="bg-gray-50"] {
   background-color: #1C1C28 !important;
   color: #F3F4F6 !important;
   border-color: #374151 !important;
 }
 
-/* Dark mode: inputs that already specify bg-[#13131C] keep their color */
-.dark input[class*="bg-[#13131C]"],
-.dark textarea[class*="bg-[#13131C]"],
-.dark select[class*="bg-[#13131C]"] {
+.dark input[class*="bg-[#13131C]"], .dark textarea[class*="bg-[#13131C]"], .dark select[class*="bg-[#13131C]"] {
   color: #F3F4F6 !important;
 }
 
-/* ── Reusable utility class for ALL form fields ── */
 .input-dark {
   @apply bg-white dark:bg-[#1C1C28] text-gray-900 dark:text-white
          border-gray-200 dark:border-gray-700

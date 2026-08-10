@@ -11,7 +11,6 @@ import VerifyCertificate from '../pages/public/VerifyCertificate'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 
-
 // Member pages
 import Dashboard from '../pages/member/Dashboard'
 import Profile from '../pages/member/Profile'
@@ -56,7 +55,7 @@ import SubscriptionManagement from '../pages/admin/SubscriptionManagement'
 import PaymentManagement from '../pages/admin/PaymentManagement'
 import ReportManagement from '../pages/admin/ReportManagement'
 import FeedbackManagement from '../pages/admin/FeedbackManagement'
-
+import AdminRevenue from '../pages/admin/AdminRevenue'
 
 const ProtectedRoute = ({ children, allowed }: { children: JSX.Element; allowed: string[] }) => {
   const { role } = useAuth()
@@ -66,11 +65,12 @@ const ProtectedRoute = ({ children, allowed }: { children: JSX.Element; allowed:
   return children
 }
 
-// Role-based redirect after login
 const RoleBasedRedirect = () => {
   const { role } = useAuth()
   if (role === 'guest') return <Navigate to="/" replace />
   if (role === 'admin') return <Navigate to="/admin" replace />
+  // Đưa supervisor vào thẳng trang Báo cáo doanh thu cho khớp với Sidebar
+  if (role === 'supervisor') return <Navigate to="/admin/revenue" replace />
   if (role === 'manager') return <Navigate to="/manager" replace />
   return <Navigate to="/dashboard" replace />
 }
@@ -78,73 +78,68 @@ const RoleBasedRedirect = () => {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Root redirect - role-based */}
       <Route path="/app" element={<RoleBasedRedirect />} />
 
       {/* Public pages */}
-      <Route path="/" element={<PublicLayout />}> 
+      <Route path="/" element={<PublicLayout />}>
         <Route index element={<Landing />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="verify-certificate" element={<VerifyCertificate />} />
       </Route>
 
-      <Route element={<AuthLayout />}> 
+      <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
 
-      {/* Member / authenticated (MainLayout) */}
+      {/* Member / authenticated */}
       <Route path="/" element={<MainLayout />}>
-        <Route
-          path="dashboard"
-          element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><Dashboard /></ProtectedRoute>}
-        />
-        <Route path="profile" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Profile /></ProtectedRoute>} />
-        <Route path="ideation-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><IdeationHub /></ProtectedRoute>} />
-        <Route path="startup-tools" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupToolsHub /></ProtectedRoute>} />
-        <Route path="evaluation-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><EvaluationHub /></ProtectedRoute>} />
-        <Route path="community-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CommunityHub /></ProtectedRoute>} />
-        <Route path="canvas-generator" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CanvasGenerator /></ProtectedRoute>} />
-        <Route path="weekly-checkin" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><WeeklyCheckin /></ProtectedRoute>} />
-        <Route path="mentorship-booking" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><MentorshipBooking /></ProtectedRoute>} />
-        <Route path="project-showcase" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><ProjectShowcase /></ProtectedRoute>} />
-        <Route path="peer-evaluation" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PeerEvaluation /></ProtectedRoute>} />
-        <Route path="pitch-deck-advisor" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PitchDeckAdvisor /></ProtectedRoute>} />
-        <Route path="gradebook" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Gradebook /></ProtectedRoute>} />
-        <Route path="job-board" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><JobBoard /></ProtectedRoute>} />
-        <Route path="opportunities" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Opportunities /></ProtectedRoute>} />
-        <Route path="idea-generator" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><IdeaGenerator /></ProtectedRoute>} />
-        <Route path="team-matching" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><TeamMatching /></ProtectedRoute>} />
-        <Route path="workspace" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Workspace /></ProtectedRoute>} />
-        <Route path="analytics" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Analytics /></ProtectedRoute>} />
-        <Route path="syllabus" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><Syllabus /></ProtectedRoute>} />
-        <Route path="customer-validation" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><CustomerValidation /></ProtectedRoute>} />
-        <Route path="financial-hub" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><FinancialHub /></ProtectedRoute>} />
-        <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><SlideOutline /></ProtectedRoute>} />
-        <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><PaymentHistory /></ProtectedRoute>} />
-        <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><StartupCertificate /></ProtectedRoute>} />
-        <Route path="ai-support" element={<ProtectedRoute allowed={['member','leader','manager','admin']}><AiSupport /></ProtectedRoute>} />
-
-        <Route path="team-management" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'admin']}><TeamManagement /></ProtectedRoute>} />
+        <Route path="dashboard" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'supervisor', 'admin']}><Dashboard /></ProtectedRoute>} />
+        <Route path="profile" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Profile /></ProtectedRoute>} />
+        <Route path="ideation-hub" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><IdeationHub /></ProtectedRoute>} />
+        <Route path="startup-tools" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><StartupToolsHub /></ProtectedRoute>} />
+        <Route path="evaluation-hub" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><EvaluationHub /></ProtectedRoute>} />
+        <Route path="community-hub" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><CommunityHub /></ProtectedRoute>} />
+        <Route path="canvas-generator" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><CanvasGenerator /></ProtectedRoute>} />
+        <Route path="weekly-checkin" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><WeeklyCheckin /></ProtectedRoute>} />
+        <Route path="mentorship-booking" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><MentorshipBooking /></ProtectedRoute>} />
+        <Route path="project-showcase" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><ProjectShowcase /></ProtectedRoute>} />
+        <Route path="peer-evaluation" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><PeerEvaluation /></ProtectedRoute>} />
+        <Route path="pitch-deck-advisor" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><PitchDeckAdvisor /></ProtectedRoute>} />
+        <Route path="gradebook" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Gradebook /></ProtectedRoute>} />
+        <Route path="job-board" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><JobBoard /></ProtectedRoute>} />
+        <Route path="opportunities" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Opportunities /></ProtectedRoute>} />
+        <Route path="idea-generator" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><IdeaGenerator /></ProtectedRoute>} />
+        <Route path="team-matching" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><TeamMatching /></ProtectedRoute>} />
+        <Route path="workspace" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Workspace /></ProtectedRoute>} />
+        <Route path="analytics" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Analytics /></ProtectedRoute>} />
+        <Route path="syllabus" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><Syllabus /></ProtectedRoute>} />
+        <Route path="customer-validation" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><CustomerValidation /></ProtectedRoute>} />
+        <Route path="financial-hub" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><FinancialHub /></ProtectedRoute>} />
+        <Route path="slide-outline" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><SlideOutline /></ProtectedRoute>} />
+        <Route path="payment-history" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><PaymentHistory /></ProtectedRoute>} />
+        <Route path="startup-certificate" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><StartupCertificate /></ProtectedRoute>} />
+        <Route path="ai-support" element={<ProtectedRoute allowed={['member','leader','manager','supervisor','admin']}><AiSupport /></ProtectedRoute>} />
+        <Route path="team-management" element={<ProtectedRoute allowed={['member', 'leader', 'manager', 'supervisor', 'admin']}><TeamManagement /></ProtectedRoute>} />
       </Route>
 
-      {/* Manager routes (MainLayout) */}
+      {/* Manager / Supervisor routes */}
       <Route path="/manager" element={<MainLayout />}>
-        <Route index element={<ProtectedRoute allowed={['manager','admin']}><ManagerDashboard /></ProtectedRoute>} />
-        <Route path="teams" element={<ProtectedRoute allowed={['manager','admin']}><TeamMonitoring /></ProtectedRoute>} />
-        <Route path="team/:id" element={<ProtectedRoute allowed={['manager','admin']}><TeamDetail /></ProtectedRoute>} />
-        <Route path="invitations" element={<ProtectedRoute allowed={['manager','admin']}><Invitations /></ProtectedRoute>} />
+        <Route index element={<ProtectedRoute allowed={['manager','supervisor','admin']}><ManagerDashboard /></ProtectedRoute>} />
+        <Route path="teams" element={<ProtectedRoute allowed={['manager','supervisor','admin']}><TeamMonitoring /></ProtectedRoute>} />
+        <Route path="team/:id" element={<ProtectedRoute allowed={['manager','supervisor','admin']}><TeamDetail /></ProtectedRoute>} />
+        <Route path="invitations" element={<ProtectedRoute allowed={['manager','supervisor','admin']}><Invitations /></ProtectedRoute>} />
       </Route>
 
-      {/* Admin routes (AdminLayout) */}
+      {/* Admin routes */}
       <Route path="/admin" element={<MainLayout />}>
-        <Route index element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="users" element={<ProtectedRoute allowed={['admin', 'leader']}><UserManagement /></ProtectedRoute>} />
-        <Route path="subscriptions" element={<ProtectedRoute allowed={['admin']}><SubscriptionManagement /></ProtectedRoute>} />
-        <Route path="payments" element={<ProtectedRoute allowed={['admin']}><PaymentManagement /></ProtectedRoute>} />
-        <Route path="reports" element={<ProtectedRoute allowed={['admin']}><ReportManagement /></ProtectedRoute>} />
-        <Route path="feedbacks" element={<ProtectedRoute allowed={['admin']}><FeedbackManagement /></ProtectedRoute>} />
-
+        <Route index element={<ProtectedRoute allowed={['admin', 'supervisor']}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="users" element={<ProtectedRoute allowed={['admin', 'leader', 'supervisor']}><UserManagement /></ProtectedRoute>} />
+        <Route path="revenue" element={<ProtectedRoute allowed={['admin', 'supervisor']}><AdminRevenue /></ProtectedRoute>} />
+        <Route path="payments" element={<ProtectedRoute allowed={['admin', 'supervisor']}><PaymentManagement /></ProtectedRoute>} />
+        <Route path="subscriptions" element={<ProtectedRoute allowed={['admin', 'supervisor']}><SubscriptionManagement /></ProtectedRoute>} />
+        <Route path="reports" element={<ProtectedRoute allowed={['admin', 'supervisor']}><ReportManagement /></ProtectedRoute>} />
+        <Route path="feedbacks" element={<ProtectedRoute allowed={['admin', 'supervisor']}><FeedbackManagement /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

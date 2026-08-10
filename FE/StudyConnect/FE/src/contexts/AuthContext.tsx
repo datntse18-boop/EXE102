@@ -1,12 +1,13 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react'
 import { authService } from '../services/apiServices'
 
-export type Role = 'guest' | 'member' | 'leader' | 'manager' | 'admin'
+export type Role = 'guest' | 'member' | 'leader' | 'manager' | 'admin' | 'supervisor'
 
 type User = {
   id: string
   name: string
-  email: string
+  phone: string
+  email?: string
   role: Role
   avatar?: string
   subscription?: string
@@ -24,7 +25,7 @@ type AuthContextValue = {
   user: User | null
   role: Role
   loading: boolean
-  login: (identifier: string, password: string) => Promise<void>
+  login: (phone: string, password: string) => Promise<void>
   logout: () => Promise<void>
   updateUserData: (data: Partial<User>) => void
 }
@@ -53,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     restore()
   }, [])
 
-  const login = async (identifier: string, password: string) => {
-    const { user: userData, accessToken, refreshToken } = await authService.login(identifier, password)
+  const login = async (phone: string, password: string) => {
+    const { user: userData, accessToken, refreshToken } = await authService.login(phone, password)
     sessionStorage.setItem('accessToken', accessToken)
     sessionStorage.setItem('refreshToken', refreshToken)
     setUser(userData)

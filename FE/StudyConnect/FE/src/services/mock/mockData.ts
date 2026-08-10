@@ -1,5 +1,3 @@
-// Mock data with relationships for a realistic SaaS platform
-
 export type UserRole = 'member' | 'leader' | 'manager' | 'admin'
 export type SubscriptionPlan = 'free' | 'premium' | 'enterprise'
 export type TaskStatus = 'todo' | 'in-progress' | 'completed'
@@ -8,6 +6,7 @@ export type TeamStatus = 'active' | 'at-risk' | 'inactive'
 export interface User {
   id: string
   name: string
+  phone: string
   email: string
   role: UserRole
   avatar?: string
@@ -22,12 +21,12 @@ export interface Team {
   name: string
   description: string
   leaderId: string
-  members: string[] // user IDs
+  members: string[]
   status: TeamStatus
   createdAt: string
   projectCount: number
   tasksCompleted: number
-  healthScore: number // 0-100
+  healthScore: number
 }
 
 export interface Project {
@@ -37,7 +36,7 @@ export interface Project {
   description: string
   status: 'planning' | 'active' | 'completed'
   milestone: number
-  progress: number // 0-100
+  progress: number
   dueDate: string
 }
 
@@ -88,12 +87,11 @@ export interface AIUsage {
   count: number
 }
 
-// ========== MOCK DATA INSTANCES ==========
-
 export const mockUsers: User[] = [
   {
     id: 'u1',
     name: 'Alice Johnson',
+    phone: '0987654321',
     email: 'alice@example.com',
     role: 'member',
     avatar: '👩‍💼',
@@ -105,6 +103,7 @@ export const mockUsers: User[] = [
   {
     id: 'u2',
     name: 'Bob Smith',
+    phone: '0912345678',
     email: 'bob@example.com',
     role: 'leader',
     avatar: '👨‍💼',
@@ -116,6 +115,7 @@ export const mockUsers: User[] = [
   {
     id: 'u3',
     name: 'Carol Williams',
+    phone: '0933445566',
     email: 'carol@example.com',
     role: 'manager',
     avatar: '👩‍🔬',
@@ -127,6 +127,7 @@ export const mockUsers: User[] = [
   {
     id: 'u4',
     name: 'David Brown',
+    phone: '0977889900',
     email: 'david@example.com',
     role: 'admin',
     avatar: '👨‍💻',
@@ -138,6 +139,7 @@ export const mockUsers: User[] = [
   {
     id: 'u5',
     name: 'Emma Davis',
+    phone: '0955667788',
     email: 'emma@example.com',
     role: 'member',
     avatar: '👩‍🎓',
@@ -149,6 +151,7 @@ export const mockUsers: User[] = [
   {
     id: 'u6',
     name: 'Frank Miller',
+    phone: '0944556677',
     email: 'frank@example.com',
     role: 'member',
     avatar: '👨‍🎓',
@@ -340,8 +343,6 @@ export const mockAIUsage: AIUsage[] = [
   { id: 'ai4', userId: 'u3', feature: 'analytics', date: '2026-06-06', count: 2 },
 ]
 
-// ========== HELPER FUNCTIONS ==========
-
 export function getTeamMembers(teamId: string): User[] {
   const team = mockTeams.find(t => t.id === teamId)
   if (!team) return []
@@ -372,7 +373,7 @@ export function getTeamHealthMetrics(teamId: string) {
   const team = mockTeams.find(t => t.id === teamId)
   const projects = getTeamProjects(teamId)
   const allTasks = projects.flatMap(p => getProjectTasks(p.id))
-  
+
   return {
     teamName: team?.name,
     members: team?.members.length || 0,
@@ -389,6 +390,6 @@ export function calculatePlatformStats() {
   const premiumUsers = mockUsers.filter(u => u.subscription === 'premium').length
   const activeTeams = mockTeams.filter(t => t.status === 'active').length
   const totalRevenue = mockPayments.reduce((sum, p) => sum + p.amount, 0)
-  
+
   return { totalUsers, activeUsers, premiumUsers, activeTeams, totalRevenue }
 }

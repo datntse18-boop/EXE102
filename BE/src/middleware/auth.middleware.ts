@@ -6,8 +6,9 @@ export interface AuthRequest extends Request {
   user?: {
     id: string
     role: string
-    email: string
+    phone: string
     name: string
+    email?: string | null
     classCode?: string | null
     subscription?: string
   }
@@ -22,7 +23,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     }
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; role: string; email: string }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; role: string; phone: string }
 
     // Verify user still exists and is active
     const user = await prisma.user.findUnique({ where: { id: decoded.id } })
@@ -43,7 +44,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     req.user = { 
       id: decoded.id, 
       role: decoded.role, 
-      email: decoded.email, 
+      phone: decoded.phone, 
+      email: user.email, 
       name: user.name, 
       classCode: user.classCode,
       subscription: userSubscription
@@ -73,8 +75,8 @@ export const checkAiLimit = async (req: AuthRequest, res: Response, next: NextFu
 
     const { id, role, subscription } = req.user
     
-    // Admin, manager, leader bypass limit
-    if (role === 'admin' || role === 'manager' || role === 'leader') {
+    // Admin, manager, leader, supervisor bypass limit
+    if (role === 'admin' || role === 'manager' || role === 'leader' || role === 'supervisor') {
       next()
       return
     }
