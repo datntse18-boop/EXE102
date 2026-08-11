@@ -677,9 +677,13 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-6 max-w-7xl mx-auto">
         {PLANS.map(plan => {
           const pricing = getPlanPricing(plan.id)
+          const isTrialPlan = plan.id === 'trial'
+          const userHasUsedTrial = user?.hasUsedTrial === true
+          const isTrialCurrent = isTrialPlan && user?.subscription === 'trial'
           const isCurrentPlan = plan.id === 'team_premium' ? false : (plan.id === currentPlan || (plan.id === 'free' && currentPlan === 'free'))
           const isUpgraded = plan.id === 'team_premium' ? false : (plan.id !== 'free' && currentPlan !== 'free' &&
             (currentPlan === plan.id || (currentPlan === 'enterprise' && plan.id === 'premium')))
+          const isPlanDisabled = plan.ctaDisabled || (isTrialPlan ? userHasUsedTrial : (isCurrentPlan || isUpgraded))
 
           return (
             <div
@@ -737,23 +741,29 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
               </div>
 
               <button
-                onClick={() => !isUpgraded && !isCurrentPlan && handleOpen(plan as any)}
-                disabled={plan.ctaDisabled || isCurrentPlan || isUpgraded}
+                onClick={() => !isPlanDisabled && handleOpen(plan as any)}
+                disabled={isPlanDisabled}
                 className={`mt-6 w-full py-3 rounded-xl text-xs font-bold transition-all duration-200 ${
-                  isCurrentPlan || isUpgraded
+                  (isCurrentPlan || isUpgraded || isTrialCurrent)
                     ? 'bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 cursor-default'
+                    : (isTrialPlan && userHasUsedTrial)
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 cursor-not-allowed'
                     : plan.popular
-                    ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                    ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
                     : plan.id === 'trial'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
                     : plan.id === 'enterprise' || plan.id === 'corporate'
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer'
                     : plan.ctaDisabled
                     ? 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-md hover:-translate-y-0.5'
+                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-md hover:-translate-y-0.5 cursor-pointer'
                 }`}
               >
-                {isCurrentPlan || isUpgraded ? (
+                {isTrialPlan && userHasUsedTrial ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <CheckCircle className="w-4 h-4" /> Đã Dùng Thử 1 Lần
+                  </span>
+                ) : (isCurrentPlan || isUpgraded || isTrialCurrent) ? (
                   <span className="flex items-center justify-center gap-1.5">
                     <CheckCircle className="w-4 h-4" /> Đang kích hoạt
                   </span>

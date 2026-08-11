@@ -94,6 +94,14 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
     const duration = Number(durationMonths) || 1;
     let amount = PLAN_PRICES[amountKey] || 0;
     if (plan === 'trial') {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user!.id } })
+      if (dbUser?.hasUsedTrial) {
+        res.status(400).json({
+          success: false,
+          message: 'Tài khoản của bạn đã sử dụng gói Dùng Thử 3 Ngày trước đó. Mỗi tài khoản chỉ được dùng 1 lần duy nhất.'
+        })
+        return
+      }
       amount = 69000;
     } else {
       amount = amount * duration;
@@ -197,6 +205,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         data: { 
           subscription: payment.plan === 'trial' ? 'trial' : payment.plan,
           subscriptionExpiresAt: expiresAt,
+          hasUsedTrial: payment.plan === 'trial' ? true : undefined,
         },
       })
 
@@ -360,6 +369,7 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: { 
           subscription: payment.plan === 'trial' ? 'trial' : payment.plan,
           subscriptionExpiresAt: expiresAt,
+          hasUsedTrial: payment.plan === 'trial' ? true : undefined,
         }
       })
 
