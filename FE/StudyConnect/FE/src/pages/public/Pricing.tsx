@@ -1005,7 +1005,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     <Download className="w-4 h-4" /> Tải Phiếu
                   </button>
                   
-                  {/* Nút Kiểm Tra Giao Dịch & Nâng Cấp Tự Động */}
+                  {/* Nút Kiểm Tra Giao Dịch Ngân Hàng */}
                   <button 
                     type="button"
                     disabled={submitting}
@@ -1013,14 +1013,22 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                       setSubmitting(true);
                       try {
                         const targetId = paymentId || txId;
-                        await paymentService.confirmPayment(targetId);
-                        const profile = await authService.me();
-                        if (profile) {
-                          updateUserData({ ...user, subscription: profile.subscription, hasUsedTrial: profile.hasUsedTrial });
+                        const checkDb = await paymentService.getPaymentDetail(targetId);
+                        const currentStatus = checkDb?.data?.status || checkDb?.status;
+
+                        if (currentStatus === 'completed' || currentStatus === 'success') {
+                          const profile = await authService.me();
+                          if (profile) {
+                            updateUserData({ ...user, subscription: profile.subscription, hasUsedTrial: profile.hasUsedTrial });
+                          }
+                          setStep('success');
+                        } else if (currentStatus === 'failed' || currentStatus === 'rejected') {
+                          setStep('failed');
+                        } else {
+                          alert(`⚠️ Hệ thống chưa nhận được tiền từ ngân hàng cho mã: ${txId}.\n\nVui lòng quét mã VietQR và hoàn tất chuyển tiền trong app ngân hàng. Ngay khi tiền về, hệ thống sẽ tự động mở khóa ngay sau 1 - 3 giây!`);
                         }
-                        setStep('success');
-                      } catch (err: any) {
-                        alert(err.response?.data?.message || 'Có lỗi xảy ra khi xác nhận giao dịch. Vui lòng thử lại.');
+                      } catch (err) {
+                        alert('Không thể kết nối đối soát máy chủ. Vui lòng thử lại sau giây lát.');
                       } finally {
                         setSubmitting(false);
                       }
@@ -1028,7 +1036,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl hover:shadow-lg transition shadow-md cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                    Xác Nhận & Kích Hoạt Ngay
+                    Kiểm Tra Giao Dịch Ngân Hàng
                   </button>
                 </div>
 
