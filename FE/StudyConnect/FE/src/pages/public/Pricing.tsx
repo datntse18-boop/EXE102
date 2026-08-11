@@ -753,10 +753,6 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-md hover:-translate-y-0.5'
                 }`}
               >
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                }`}
-              >
                 {isCurrentPlan || isUpgraded ? (
                   <span className="flex items-center justify-center gap-1.5">
                     <CheckCircle className="w-4 h-4" /> Đang kích hoạt
