@@ -34,6 +34,26 @@ const PLANS = [
     ctaDisabled: true,
   },
   {
+    id: 'trial',
+    name: 'Gói Dùng Thử 3 Ngày ⚡',
+    price: 69000,
+    priceLabel: '69.000 VNĐ',
+    period: '/ 3 ngày / cá nhân',
+    desc: 'Trải nghiệm toàn bộ tính năng Pro siêu tiết kiệm',
+    color: 'amber',
+    badgeText: 'DÙNG THỬ 69K',
+    features: [
+      { label: '3 ngày trải nghiệm toàn bộ tính năng Pro', ok: true },
+      { label: 'AI phân tích ý tưởng không giới hạn', ok: true },
+      { label: 'AI Startup Mentor chatbot', ok: true },
+      { label: 'Virtual Demo Day AI', ok: true },
+      { label: 'OKR nâng cao & Analytics', ok: true },
+      { label: 'Trải nghiệm trước khi nâng cấp gói Pro', ok: true },
+    ],
+    cta: 'Đăng Ký Dùng Thử 69K',
+    ctaDisabled: false,
+  },
+  {
     id: 'premium',
     name: 'Gói Pro Premium',
     price: 699000,
@@ -330,6 +350,14 @@ export default function Pricing() {
   const [billingPeriod, setBillingPeriod] = useState<1 | 3 | 12>(1)
 
   const getPlanPricing = (planId: string) => {
+    if (planId === 'trial') {
+      return {
+        price: 69000,
+        label: '69.000 VNĐ',
+        originalLabel: '',
+        period: '/ 3 ngày / cá nhân'
+      }
+    }
     let base = 0
     if (planId === 'premium') base = 699000
     else if (planId === 'team_premium') base = 3149000
@@ -646,7 +674,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-6 max-w-7xl mx-auto">
         {PLANS.map(plan => {
           const pricing = getPlanPricing(plan.id)
           const isCurrentPlan = plan.id === 'team_premium' ? false : (plan.id === currentPlan || (plan.id === 'free' && currentPlan === 'free'))
@@ -659,12 +687,19 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
               className={`relative flex flex-col justify-between p-6 rounded-3xl h-full transition-all duration-300 ${
                 plan.popular
                   ? 'border-2 border-[#FF6B00] shadow-[0_12px_50px_rgba(255,107,0,0.15)] bg-white dark:bg-[#13131C]'
+                  : plan.id === 'trial'
+                  ? 'border-2 border-amber-500/60 shadow-[0_10px_35px_rgba(245,158,11,0.15)] bg-white dark:bg-[#13131C]'
                   : plan.id === 'enterprise'
                   ? 'border border-purple-500/30 bg-gradient-to-br from-purple-950/20 to-[#13131C] dark:bg-[#13131C]'
                   : 'border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#13131C]'
               }`}
             >
-              {plan.popular && (
+              {plan.badgeText && (
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1 whitespace-nowrap">
+                  <Sparkles className="w-3 h-3 animate-pulse" /> {plan.badgeText}
+                </span>
+              )}
+              {plan.popular && !plan.badgeText && (
                 <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1">
                   <Zap className="w-3 h-3" /> Phổ biến nhất
                 </span>
@@ -685,7 +720,7 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     </span>
                   )}
                   <div>
-                    <span className={`text-3xl font-black ${plan.popular ? 'text-[#FF6B00]' : 'text-gray-800 dark:text-white'}`}>
+                    <span className={`text-3xl font-black ${plan.popular ? 'text-[#FF6B00]' : plan.id === 'trial' ? 'text-amber-500' : 'text-gray-800 dark:text-white'}`}>
                       {pricing.label}
                     </span>
                     <span className="text-xs text-gray-400 font-bold ml-1">{pricing.period}</span>
@@ -709,7 +744,15 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     ? 'bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 cursor-default'
                     : plan.popular
                     ? 'bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
-                    : plan.id === 'enterprise'
+                    : plan.id === 'trial'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                    : plan.id === 'enterprise' || plan.id === 'corporate'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                    : plan.ctaDisabled
+                    ? 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-md hover:-translate-y-0.5'
+                }`}
+              >
                     ? 'bg-purple-600 hover:bg-purple-700 text-white'
                     : 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }`}

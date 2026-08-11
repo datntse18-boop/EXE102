@@ -167,7 +167,7 @@ export default function Profile() {
               </span>
               {user?.subscription && user.subscription !== 'free' && (
                 <span className="inline-flex items-center gap-1 bg-yellow-400 text-gray-950 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">
-                  👑 {user.subscription === 'premium' ? 'Premium Pro' : 'Enterprise'}
+                  ⚡ {user.subscription === 'trial' ? 'Dùng Thử 3 Ngày' : (user.subscription === 'premium' ? 'Premium Pro' : 'Enterprise')}
                 </span>
               )}
               {user?.subscriptionExpiresAt && user.subscription !== 'free' && (

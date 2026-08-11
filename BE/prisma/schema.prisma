@@ -20,6 +20,7 @@ enum Role {
 
 enum SubscriptionPlan {
   free
+  trial
   premium
   enterprise
 }

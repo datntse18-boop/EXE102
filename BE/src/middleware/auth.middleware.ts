@@ -81,8 +81,8 @@ export const checkAiLimit = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
-    // Premium or enterprise bypass limit
-    if (subscription === 'premium' || subscription === 'enterprise') {
+    // Trial, Premium or enterprise bypass limit
+    if (subscription === 'trial' || subscription === 'premium' || subscription === 'enterprise') {
       next()
       return
     }

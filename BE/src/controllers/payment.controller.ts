@@ -3,6 +3,7 @@ import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 
 const PLAN_PRICES: Record<string, number> = {
+  trial: 69000,
   premium: 699000,
   team_premium: 3149000,
   enterprise: 899000,
@@ -74,7 +75,7 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { plan, txId, discountCode, bankId, teamId, durationMonths } = req.body;
     
-    const validPlans = ['premium', 'enterprise'];
+    const validPlans = ['trial', 'premium', 'enterprise'];
     if (!plan || !validPlans.includes(plan)) {
       res.status(400).json({ success: false, message: 'Valid plan required' });
       return;
@@ -91,9 +92,14 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const duration = Number(durationMonths) || 1;
-    let amount = PLAN_PRICES[amountKey] * duration;
-    if (duration === 3) amount = Math.round(amount * 0.8);
-    else if (duration === 12) amount = Math.round(amount * 0.7);
+    let amount = PLAN_PRICES[amountKey] || 0;
+    if (plan === 'trial') {
+      amount = 69000;
+    } else {
+      amount = amount * duration;
+      if (duration === 3) amount = Math.round(amount * 0.8);
+      else if (duration === 12) amount = Math.round(amount * 0.7);
+    }
 
     if (discountCode === 'STUDYCONNECT30') amount = Math.round(amount * 0.7);
     const finalTxId = txId || generateTransactionCode();
@@ -180,21 +186,26 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
         baseDate = new Date(user.subscriptionExpiresAt)
       }
       expiresAt = new Date(baseDate)
-      expiresAt.setMonth(expiresAt.getMonth() + duration)
+      if (payment.plan === 'trial') {
+        expiresAt.setDate(expiresAt.getDate() + 3)
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + duration)
+      }
 
       await prisma.user.update({
         where: { id: payment.userId },
         data: { 
-          subscription: payment.plan,
+          subscription: payment.plan === 'trial' ? 'trial' : payment.plan,
           subscriptionExpiresAt: expiresAt,
         },
       })
 
+      const planTitle = payment.plan === 'trial' ? 'Gói Dùng Thử 3 Ngày (69.000 VNĐ)' : (payment.plan === 'premium' ? 'Gói Pro Premium' : 'Gói Enterprise')
       await prisma.notification.create({
         data: {
           userId: payment.userId,
           title: '🎉 Thanh toán xác nhận thành công!',
-          content: `Gói ${payment.plan === 'premium' ? 'Premium Pro' : 'Enterprise'} của bạn đã được kích hoạt. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
+          content: `${planTitle} của bạn đã được kích hoạt thành công. Ngày hết hạn: ${expiresAt.toLocaleDateString('vi-VN')} (Gia hạn cộng dồn thành công)`,
           link: '/pricing',
         },
       })
@@ -338,21 +349,26 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         baseDate = new Date(userObj.subscriptionExpiresAt)
       }
       expiresAt = new Date(baseDate)
-      expiresAt.setMonth(expiresAt.getMonth() + duration)
+      if (payment.plan === 'trial') {
+        expiresAt.setDate(expiresAt.getDate() + 3)
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + duration)
+      }
 
       await prisma.user.update({
         where: { id: payment.userId },
         data: { 
-          subscription: payment.plan,
+          subscription: payment.plan === 'trial' ? 'trial' : payment.plan,
           subscriptionExpiresAt: expiresAt,
         }
       })
 
+      const planNameWeb = payment.plan === 'trial' ? 'Gói Dùng Thử 3 Ngày (69.000 VNĐ)' : (payment.plan === 'premium' ? 'Gói Pro Premium' : 'Gói Enterprise')
       await prisma.notification.create({
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói thành công tự động!',
-          content: `Hệ thống đã xác nhận khoản chuyển khoản của bạn cho hóa đơn ${extractedTxId}. Gói đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Hệ thống đã xác nhận khoản chuyển khoản của bạn cho hóa đơn ${extractedTxId}. ${planNameWeb} đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })
