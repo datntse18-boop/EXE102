@@ -976,28 +976,35 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                     <Download className="w-4 h-4" /> Tải Phiếu
                   </button>
                   
-                  {/* FIX LỖI ĐÓNG KÍCH HOẠT NGẦM: Kiểm tra trạng thái thực tế trước khi hiển thị màn hình kết quả */}
+                  {/* Nút Kiểm Tra Giao Dịch Thực Tế */}
                   <button 
                     type="button"
+                    disabled={submitting}
                     onClick={async () => {
+                      setSubmitting(true);
                       try {
-                        // Gọi webhook giả lập nhận tiền tự động
-                        await paymentService.simulateWebhook(txId, finalPrice);
-                        // Check Admin có bấm Từ chối hay Xác nhận chưa
                         const checkDb = await paymentService.getPaymentDetail(paymentId || txId);
-                        if (checkDb && (checkDb.data?.status === 'failed' || checkDb.status === 'failed')) {
+                        const currentStatus = checkDb?.data?.status || checkDb?.status;
+
+                        if (currentStatus === 'completed' || currentStatus === 'success') {
+                          const profile = await authService.me();
+                          if (profile) updateUserData({ ...user, subscription: profile.subscription });
+                          setStep('success');
+                        } else if (currentStatus === 'failed' || currentStatus === 'rejected') {
                           setStep('failed');
                         } else {
-                          setStep('success');
+                          alert(`⚠️ Hệ thống chưa nhận được chuyển khoản từ ngân hàng cho mã: ${txId}.\n\nVui lòng hoàn tất quét mã QR chuyển tiền. Hệ thống đang tự động theo dõi mỗi 3 giây...`);
                         }
                       } catch (err) {
-                        // Dự phòng lỗi kết nối, vẫn cho hiển thị success để kích hoạt
-                        setStep('success');
+                        alert('Không thể kết nối đối soát máy chủ. Vui lòng thử lại sau giây lát.');
+                      } finally {
+                        setSubmitting(false);
                       }
                     }} 
-                    className="flex-1 py-3.5 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md cursor-pointer"
+                    className="flex-1 py-3.5 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E85A00] transition shadow-md cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    Đóng (Kích hoạt ngầm)
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                    Kiểm Tra Giao Dịch
                   </button>
                 </div>
               </div>
