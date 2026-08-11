@@ -141,11 +141,25 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
   try {
     const id = req.params.id as string
 
-    const payment = await prisma.payment.findUnique({ where: { id } })
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { txId: id }
+        ]
+      }
+    })
     if (!payment) {
       res.status(404).json({ success: false, message: 'Payment not found' })
       return
     }
+
+    const userRole = req.user!.role
+    if (payment.userId !== req.user!.id && userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'manager' && userRole !== 'leader') {
+      res.status(403).json({ success: false, message: 'Không có quyền xác nhận đơn thanh toán này' })
+      return
+    }
+
     if (payment.status === 'completed') {
       res.status(400).json({ success: false, message: 'Payment already confirmed' })
       return
@@ -153,7 +167,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
 
     // Mark as completed
     const updated = await prisma.payment.update({
-      where: { id },
+      where: { id: payment.id },
       data: { status: 'completed' },
       include: { user: { select: { id: true, name: true, email: true } } },
     })
