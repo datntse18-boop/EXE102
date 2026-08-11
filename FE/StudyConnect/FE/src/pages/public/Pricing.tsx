@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Check, CheckCircle, CreditCard, ArrowRight, Loader2,
+  Check, CheckCircle, CreditCard, ArrowRight, ArrowLeft, Loader2,
   Download, Printer, Sparkles, Percent, ShieldCheck,
   Building2, Copy, AlertCircle, Clock, X, Crown, Zap, Upload, Image, Sliders, XCircle
 } from 'lucide-react'
@@ -915,6 +915,13 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                 {/* Action buttons */}
                 <div className="flex gap-3">
                   <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Hủy
+                  </button>
+                  <button
                     onClick={handleSubmitPayment}
                     disabled={submitting || countdown <= 0}
                     className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer"
@@ -927,7 +934,8 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   </button>
                   <button
                     onClick={downloadInvoice}
-                    className="px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    className="px-3.5 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer"
+                    title="Tải phiếu hóa đơn"
                   >
                     <Download className="w-4 h-4" />
                   </button>
@@ -937,17 +945,38 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
 
             {/* STEP 2 – PENDING (ĐANG KIỂM TRA GIAO DỊCH) */}
             {step === 'pending' && (
-              <div className="p-8 text-center space-y-6">
-                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-50 dark:bg-orange-950/20 mb-2">
-                  <Loader2 className="w-10 h-10 text-[#FF6B00] animate-spin" />
-                  <Clock className="w-5 h-5 text-orange-500 absolute bottom-1 right-1 bg-white dark:bg-[#13131C] rounded-full p-0.5" />
+              <div className="p-6 space-y-5">
+                {/* Modal Header for Pending */}
+                <div className="flex justify-between items-center pb-3 border-b dark:border-gray-800">
+                  <button 
+                    onClick={() => setStep('checkout')} 
+                    className="text-xs font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Quay lại
+                  </button>
+                  <h4 className="font-black text-gray-800 dark:text-white text-xs uppercase tracking-wider">
+                    Đang Kiểm Tra Giao Dịch
+                  </h4>
+                  <button 
+                    onClick={() => { setShowModal(false); setStep('checkout'); }} 
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer"
+                    title="Thoát"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-gray-800 dark:text-white">Đang Kiểm Tra Giao Dịch... ⏳</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2.5 leading-relaxed max-w-xs mx-auto">
-                    Hệ thống đang tự động đối soát giao dịch chuyển khoản của bạn. Vui lòng <strong>không đóng trình duyệt</strong>.
-                    Tài khoản sẽ tự động nâng cấp ngay khi nhận được tiền từ ngân hàng (thông thường từ 1 - 2 phút).
-                  </p>
+
+                <div className="text-center space-y-4 pt-1">
+                  <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/20">
+                    <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin" />
+                    <Clock className="w-4 h-4 text-orange-500 absolute bottom-0 right-0 bg-white dark:bg-[#13131C] rounded-full p-0.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-800 dark:text-white">Đang Đối Soát Giao Dịch... ⏳</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed max-w-xs mx-auto">
+                      Hệ thống đang tự động đối soát giao dịch chuyển khoản ngân hàng. Tài khoản sẽ tự động nâng cấp ngay khi nhận được tiền.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-[#0B0B0F]/60 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 text-xs space-y-2.5 text-left">
@@ -971,8 +1000,8 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button onClick={downloadInvoice} className="flex-1 py-3.5 bg-gray-100 dark:bg-[#1C1C28] text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5">
+                <div className="flex gap-3 pt-1">
+                  <button onClick={downloadInvoice} className="px-4 py-3 bg-gray-100 dark:bg-[#1C1C28] text-gray-600 dark:text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <Download className="w-4 h-4" /> Tải Phiếu
                   </button>
                   
@@ -1005,6 +1034,15 @@ Vui lòng chuyển khoản đúng nội dung để được xử lý nhanh!
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                     Kiểm Tra Giao Dịch
+                  </button>
+                </div>
+
+                <div className="text-center pt-1">
+                  <button 
+                    onClick={() => { setShowModal(false); setStep('checkout'); }}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" /> Thoát khỏi trang thanh toán
                   </button>
                 </div>
               </div>
