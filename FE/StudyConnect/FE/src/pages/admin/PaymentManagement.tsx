@@ -256,27 +256,39 @@ export default function PaymentManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        {p.status === 'pending' && (
-                          <div className="flex gap-2 justify-end">
+                        <div className="flex items-center justify-end gap-2">
+                          {p.status === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => handleConfirm(p.id)}
+                                disabled={actionLoading === p.id}
+                                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-[10px] transition disabled:opacity-50 flex items-center gap-1 cursor-pointer shadow-sm"
+                                title="Xác nhận thanh toán và mở khóa gói dịch vụ"
+                              >
+                                {actionLoading === p.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                                Xác nhận
+                              </button>
+                              <button
+                                onClick={() => setShowRejectModal(p.id)}
+                                disabled={actionLoading === p.id}
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-[10px] transition disabled:opacity-50 flex items-center gap-1 cursor-pointer shadow-sm"
+                                title="Từ chối đơn thanh toán"
+                              >
+                                <XCircle className="w-3 h-3" /> Từ chối
+                              </button>
+                            </>
+                          ) : (
                             <button
                               onClick={() => handleConfirm(p.id)}
                               disabled={actionLoading === p.id}
-                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-[10px] transition disabled:opacity-50 flex items-center gap-1"
+                              className="px-2.5 py-1.5 bg-gray-100 dark:bg-[#1C1C28] hover:bg-green-600 hover:text-white text-gray-700 dark:text-gray-300 rounded-lg font-bold text-[10px] transition disabled:opacity-50 flex items-center gap-1 cursor-pointer border border-gray-200 dark:border-gray-700"
+                              title="Bấm để kích hoạt/duyệt lại gói cho người dùng này"
                             >
-                              <CheckCircle className="w-3 h-3" /> Xác nhận
+                              {actionLoading === p.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3 text-green-500" />}
+                              Duyệt lại / Kích hoạt
                             </button>
-                            <button
-                              onClick={() => setShowRejectModal(p.id)}
-                              disabled={actionLoading === p.id}
-                              className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-[10px] transition disabled:opacity-50 flex items-center gap-1"
-                            >
-                              <XCircle className="w-3 h-3" /> Từ chối
-                            </button>
-                          </div>
-                        )}
-                        {p.status !== 'pending' && (
-                          <span className="text-gray-300 dark:text-gray-600 text-[10px]">—</span>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
