@@ -94,8 +94,17 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', message: 'StudyConnect API is running 🚀', timestamp: new Date().toISOString() })
+})
+
+// Public PayOS Webhook verification route
+app.all(['/webhook', '/api/webhook', '/api/payments/webhook'], (req, res, next) => {
+  if (req.method === 'GET') {
+    res.json({ success: true, message: 'StudyConnect PayOS Webhook active' })
+    return
+  }
+  next()
 })
 
 // API Routes
