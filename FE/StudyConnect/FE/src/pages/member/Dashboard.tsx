@@ -65,31 +65,31 @@ export default function Dashboard() {
   const loadData = async () => {
     setLoading(true)
     try {
-      if (role === 'leader') {
+      if (role === 'supervisor') {
         // Quản lý (Dean) sees all lecturers and all teams
         const [lecturersData, allTeamsData] = await Promise.all([
-          userService.getUsers({ role: 'manager' }),
-          teamService.getTeams(),
+          userService.getUsers({ role: 'manager' }).catch(() => []),
+          teamService.getTeams().catch(() => []),
         ])
-        setLecturers(lecturersData)
-        setTeams(allTeamsData)
+        setLecturers(Array.isArray(lecturersData) ? lecturersData : [])
+        setTeams(Array.isArray(allTeamsData) ? allTeamsData : [])
       } else {
-        // Students (member) see their own teams and tasks
+        // Students (member & leader) see their own teams and tasks
         const [teamsData, tasksData] = await Promise.all([
-          teamService.getTeams(),
-          taskService.getMyTasks(),
+          teamService.getTeams().catch(() => []),
+          taskService.getMyTasks().catch(() => []),
         ])
-        setTeams(teamsData)
-        setTasks(tasksData)
+        setTeams(Array.isArray(teamsData) ? teamsData : [])
+        setTasks(Array.isArray(tasksData) ? tasksData : [])
         
         // Select first led team by default for AI Analysis
-        const led = teamsData.filter((t: any) => t.leaderId === user?.id)
+        const led = (Array.isArray(teamsData) ? teamsData : []).filter((t: any) => t?.leaderId === user?.id)
         if (led.length > 0) {
           setSelectedLeadTeamId(led[0].id)
         }
       }
     } catch (err) {
-      console.error(err)
+      console.error('Dashboard loadData error:', err)
     } finally {
       setLoading(false)
     }
@@ -99,8 +99,8 @@ export default function Dashboard() {
     loadData()
   }, [role])
 
-  const leadTeams = teams.filter(t => t.leaderId === user?.id)
-  const isTeamLeader = role === 'member' && leadTeams.length > 0
+  const leadTeams = (teams || []).filter(t => t?.leaderId === user?.id)
+  const isTeamLeader = (role === 'member' || role === 'leader') && leadTeams.length > 0
 
   // Student join team to lecturer class
   const handleJoinClass = async (teamId: string) => {
@@ -259,8 +259,8 @@ export default function Dashboard() {
     )
   }
 
-  // RENDER DEAN/COORDINATOR DASHBOARD (role === 'leader')
-  if (role === 'leader') {
+  // RENDER DEAN/COORDINATOR DASHBOARD (role === 'supervisor')
+  if (role === 'supervisor') {
     // Filter teams by selected lecturer's classCode
     const deanFilteredTeams = selectedLecturerCode === 'all' 
       ? teams 

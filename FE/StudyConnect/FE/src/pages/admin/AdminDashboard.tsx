@@ -29,15 +29,15 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       const [statsData, usersData, teamsData] = await Promise.all([
-        reportService.getPlatformStats(),
-        userService.getUsers(),
-        teamService.getTeams(),
+        reportService.getPlatformStats().catch(() => null),
+        userService.getUsers().catch(() => []),
+        teamService.getTeams().catch(() => []),
       ])
       setStats(statsData)
-      setUsers(usersData)
-      setTeams(teamsData)
+      setUsers(Array.isArray(usersData) ? usersData : [])
+      setTeams(Array.isArray(teamsData) ? teamsData : [])
     } catch (err) {
-      console.error(err)
+      console.error('AdminDashboard loadData error:', err)
     } finally {
       setLoading(false)
     }
@@ -55,8 +55,8 @@ export default function AdminDashboard() {
       // Update local state
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus === 'active' ? 'suspended' : 'active' } : u))
       // Refresh stats
-      const updatedStats = await reportService.getPlatformStats()
-      setStats(updatedStats)
+      const updatedStats = await reportService.getPlatformStats().catch(() => null)
+      if (updatedStats) setStats(updatedStats)
     } catch (err) {
       console.error(err)
       alert('Không thể cập nhật trạng thái người dùng')
@@ -65,9 +65,9 @@ export default function AdminDashboard() {
     }
   }
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = (users || []).filter(u => 
+    (u?.name || u?.phone || 'Người dùng').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+    (u?.email || '').toLowerCase().includes((searchTerm || '').toLowerCase())
   ).slice(0, 5)
 
   if (loading) {
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
         <div className="card bg-white dark:bg-[#13131C] border border-gray-150/40 dark:border-gray-850/40 flex items-center justify-between p-5 shadow-sm rounded-2xl">
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Premium Rate</span>
-            <span className="text-2xl font-black text-gray-900 dark:text-white">{stats ? `${Math.round((stats.users.premium / stats.users.total) * 100)}%` : '...'}</span>
+            <span className="text-2xl font-black text-gray-900 dark:text-white">{(stats?.users?.total && stats.users.total > 0) ? `${Math.round(((stats.users.premium || 0) / stats.users.total) * 100)}%` : '0%'}</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/20 flex items-center justify-center text-purple-500 shadow-sm">
             <Cpu className="w-5 h-5" />
