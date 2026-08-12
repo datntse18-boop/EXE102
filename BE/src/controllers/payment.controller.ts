@@ -1,6 +1,13 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { PayOS } from '@payos/node'
+
+const payos = new PayOS({
+  clientId: process.env.PAYOS_CLIENT_ID || '2f76ac30-fef8-4570-a2b4-b71e5c08869b',
+  apiKey: process.env.PAYOS_API_KEY || 'e6c40d9f-18ef-484a-9558-e3996766f758',
+  checksumKey: process.env.PAYOS_CHECKSUM_KEY || '69ccf465188f058289f7efcf4b54ee77203d53c3af1e40982c42905dfe847910'
+})
 
 const PLAN_PRICES: Record<string, number> = {
   trial: 69000,
@@ -126,9 +133,28 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
       },
     });
 
+    let payosData: any = null
+    try {
+      const numericOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 89 + 10))
+      const payosOrder = {
+        orderCode: numericOrderCode,
+        amount: amount,
+        description: finalTxId.slice(0, 25),
+        cancelUrl: `https://exe-102.vercel.app/pricing`,
+        returnUrl: `https://exe-102.vercel.app/pricing?success=true`,
+      }
+      payosData = await payos.paymentRequests.create(payosOrder)
+    } catch (payosErr) {
+      console.warn('PayOS createPaymentLink warning:', payosErr)
+    }
+
     res.status(201).json({
       success: true,
-      data: payment,
+      data: {
+        ...payment,
+        checkoutUrl: payosData?.checkoutUrl || null,
+        payosQrCode: payosData?.qrCode || null,
+      },
       message: 'Đơn thanh toán đã được khởi tạo thành công.',
     });
   } catch (err) {
