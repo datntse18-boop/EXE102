@@ -303,40 +303,37 @@ export const getPaymentStats = async (req: AuthRequest, res: Response): Promise<
 export const handleBankWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawBodyStr = JSON.stringify(req.body || {})
-    console.log('Received Webhook:', rawBodyStr)
+    console.log('Received Payment Webhook Payload:', rawBodyStr)
 
-    // Extract transaction code SCxxxxxx from any field in request body
+    // Extract transaction code SCxxxxxx from request body or nested JSON string
     const match = rawBodyStr.toUpperCase().match(/SC[A-Z0-9]{6,10}/)
-    
-    // Extract amount from any standard field
-    const amountIn = Number(
-      req.body?.amountIn || 
-      req.body?.transferAmount || 
-      req.body?.amount || 
-      req.body?.data?.amount || 
-      0
-    )
+    const extractedTxId = match ? match[0] : null
+    const orderCodeStr = req.body?.data?.orderCode ? String(req.body.data.orderCode) : (req.body?.orderCode ? String(req.body.orderCode) : null)
 
-    if (!match) {
-      // PayOS test webhook confirmation or non-SC webhook
-      res.json({ success: true, message: 'Webhook received successfully (No SC code found)' })
-      return
+    // Find pending payment matching txId, orderCode, or latest pending bill
+    let payment = null
+    if (extractedTxId) {
+      payment = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            { txId: extractedTxId },
+            { id: extractedTxId }
+          ],
+          status: 'pending'
+        }
+      })
     }
-
-    const extractedTxId = match[0]
-
-    // Find pending payment matching SC code
-    let payment = await prisma.payment.findFirst({
-      where: {
-        OR: [
-          { txId: extractedTxId },
-          { id: extractedTxId }
-        ],
-        status: 'pending'
-      }
-    })
-
-    // Fallback: If no exact pending payment found with SC code, get latest pending payment
+    if (!payment && orderCodeStr) {
+      payment = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            { txId: orderCodeStr },
+            { id: orderCodeStr }
+          ],
+          status: 'pending'
+        }
+      })
+    }
     if (!payment) {
       payment = await prisma.payment.findFirst({
         where: { status: 'pending' },
@@ -345,16 +342,17 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
     }
 
     if (!payment) {
-      res.json({ success: true, message: `No pending bill found matching code: ${extractedTxId}` })
+      res.json({ success: true, message: 'PayOS Webhook received (No pending payment found to upgrade)' })
       return
     }
 
-    // Update payment status to completed
+    // Mark payment status as completed
     await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'completed' }
     })
 
+    // Upgrade user or team subscription
     const duration = payment.durationMonths || 1
     let expiresAt = new Date()
     const userObj = await prisma.user.findUnique({ where: { id: payment.userId } })
@@ -380,7 +378,7 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
         data: {
           userId: payment.userId,
           title: '🎉 Nâng cấp gói Nhóm tự động thành công!',
-          content: `Hệ thống đã xác nhận thanh toán chuyển khoản cho mã ${extractedTxId}. Gói Premium của nhóm đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          content: `Hệ thống đã xác nhận thanh toán chuyển khoản cho mã ${payment.txId}. Gói Premium của nhóm đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })
@@ -409,8 +407,8 @@ export const handleBankWebhook = async (req: Request, res: Response): Promise<vo
       await prisma.notification.create({
         data: {
           userId: payment.userId,
-          title: '🎉 Nâng cấp gói thành công tự động!',
-          content: `Hệ thống đã xác nhận khoản chuyển khoản của bạn cho hóa đơn ${extractedTxId}. ${planNameWeb} đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
+          title: '🎉 Nâng cấp gói tự động thành công!',
+          content: `Hệ thống đã nhận thanh toán ngân hàng cho hóa đơn ${payment.txId}. ${planNameWeb} đã được mở khóa tự động. Hết hạn: ${expiresAt.toLocaleDateString('vi-VN')}`,
           link: '/pricing',
         }
       })
