@@ -4,7 +4,10 @@ import { authenticate, authorize } from '../middleware/auth.middleware'
 
 const router = Router()
 
-// Public bank webhook for auto-upgrade (Casso, SePay)
+// Public bank webhook for auto-upgrade (PayOS, SePay, Casso)
+router.get('/webhook', (_req, res) => {
+  res.json({ success: true, message: 'StudyConnect PayOS Webhook endpoint is active' })
+})
 router.post('/webhook', handleBankWebhook)
 
 router.use(authenticate)
