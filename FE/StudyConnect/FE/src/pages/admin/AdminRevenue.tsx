@@ -27,13 +27,13 @@ export default function RevenuePage() {
   const loadRevenueData = async () => {
     try {
       const [statsData, paymentsData] = await Promise.all([
-        reportService.getPlatformStats(),
-        paymentService.getPayments(),
+        reportService.getPlatformStats().catch(() => null),
+        paymentService.getPayments().catch(() => []),
       ])
       setStats(statsData)
-      setPayments(paymentsData)
+      setPayments(Array.isArray(paymentsData) ? paymentsData : [])
     } catch (err) {
-      console.error(err)
+      console.error('AdminRevenue loadRevenueData error:', err)
     } finally {
       setLoading(false)
     }

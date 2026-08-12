@@ -24,9 +24,10 @@ const STATUS_CONFIG = {
   failed:    { label: 'Từ chối',       color: 'red',    icon: XCircle },
 }
 
-const PLAN_CONFIG = {
-  premium:    { label: 'Pro Premium', color: 'orange' },
-  enterprise: { label: 'Enterprise',  color: 'purple' },
+const PLAN_CONFIG: Record<string, { label: string; color: string }> = {
+  trial:      { label: 'Dùng thử 3 ngày', color: 'blue' },
+  premium:    { label: 'Pro Premium',      color: 'orange' },
+  enterprise: { label: 'Enterprise',       color: 'purple' },
 }
 
 export default function PaymentManagement() {
@@ -74,15 +75,17 @@ export default function PaymentManagement() {
     } finally { setActionLoading(null) }
   }
 
-  const filtered = payments.filter(p => {
+  const filtered = (payments || []).filter(p => {
     const matchStatus = filter === 'all' || p.status === filter
+    const name = (p?.user?.name || p?.user?.phone || 'Người dùng').toLowerCase()
+    const email = (p?.user?.email || '').toLowerCase()
     const matchSearch = !search ||
-      p.user.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.user.email.toLowerCase().includes(search.toLowerCase())
+      name.includes(search.toLowerCase()) ||
+      email.includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
 
-  const pendingCount = payments.filter(p => p.status === 'pending').length
+  const pendingCount = (payments || []).filter(p => p?.status === 'pending').length
 
   return (
     <div className="space-y-6 animate-fadeIn p-1">
@@ -199,14 +202,16 @@ export default function PaymentManagement() {
               </thead>
               <tbody className="divide-y dark:divide-gray-800">
                 {filtered.map(p => {
-                  const status = STATUS_CONFIG[p.status]
-                  const plan = PLAN_CONFIG[p.plan]
+                  const status = STATUS_CONFIG[p.status] || { label: p.status || 'Chờ xác nhận', color: 'yellow', icon: Clock }
+                  const plan = PLAN_CONFIG[p.plan] || { label: p.plan || 'Gói dịch vụ', color: 'orange' }
                   const StatusIcon = status.icon
+                  const userName = p?.user?.name || p?.user?.phone || 'Người dùng'
+                  const userEmail = p?.user?.email || 'Chưa cập nhật email'
                   return (
                     <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition">
                       <td className="px-5 py-4">
-                        <p className="font-bold text-gray-800 dark:text-white">{p.user.name}</p>
-                        <p className="text-gray-400 mt-0.5">{p.user.email}</p>
+                        <p className="font-bold text-gray-800 dark:text-white">{userName}</p>
+                        <p className="text-gray-400 mt-0.5">{userEmail}</p>
                         {p.txId && (
                           <p className="text-[10px] mt-1.5 text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded w-max">
                             Mã GD: <strong className="font-mono text-[#FF6B00]">{p.txId}</strong> | Ngân hàng: <strong className="text-blue-500 font-bold">{p.bankId || 'N/A'}</strong>
@@ -215,9 +220,9 @@ export default function PaymentManagement() {
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex px-2.5 py-1 rounded-lg font-bold text-[10px] ${
-                          p.plan === 'premium'
-                            ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400'
-                            : 'bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400'
+                          plan.color === 'orange' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400' :
+                          plan.color === 'purple' ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400' :
+                          'bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
                         }`}>
                           {plan.label}
                         </span>
