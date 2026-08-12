@@ -19,7 +19,12 @@ import {
   TrendingUp,
   Inbox,
   CalendarDays,
-  DollarSign
+  DollarSign,
+  FilePieChart,
+  Briefcase,
+  GraduationCap,
+  Eye,
+  BookOpen
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { teamService } from '../../services/apiServices'
