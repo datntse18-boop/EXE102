@@ -155,8 +155,8 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const userRole = req.user!.role
-    if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'manager' && userRole !== 'leader') {
-      res.status(403).json({ success: false, message: 'Chỉ Admin/Quản lý mới có quyền duyệt thủ công đơn hàng này' })
+    if (payment.userId !== req.user!.id && userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'manager' && userRole !== 'leader') {
+      res.status(403).json({ success: false, message: 'Không có quyền xác nhận đơn thanh toán này' })
       return
     }
 

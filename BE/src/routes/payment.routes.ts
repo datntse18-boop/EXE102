@@ -14,7 +14,7 @@ router.get('/stats', authorize('admin', 'supervisor'), getPaymentStats)
 router.post('/', createPayment)
 router.post('/trial', activateTrial)
 router.get('/:id', getPaymentDetail) 
-router.patch('/:id/confirm', authorize('admin', 'supervisor', 'manager', 'leader'), confirmPayment)
+router.patch('/:id/confirm', confirmPayment)
 router.patch('/:id/reject', authorize('admin', 'supervisor'), rejectPayment)
 
 export default router
